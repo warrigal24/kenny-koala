@@ -1,0 +1,3509 @@
+!% -~S
+!% $OMIT_UNUSED_ROUTINES=1
+!% $ZCODE_LESS_DICT_DATA=1
+!========================================
+! Kenny Koala's Bushfire Survival Plan
+! Copyright © 2022 Garry Francis
+!========================================
+!Constant DEBUG;
+
+Constant Story "Kenny Koala's Bushfire Survival Plan";
+#Ifv5;
+Zcharacter table + '@{A9}'; !Add copyright symbol
+Constant Headline "^Copyright @{A9} 2022 Garry Francis^Type ABOUT for further info and credits.^^";
+#Ifnot;
+Constant Headline "^Copyright (c) 2022 Garry Francis^Type ABOUT for further info and credits.^^";
+#Endif;
+
+Array UUID_ARRAY string "UUID://9d421942-a010-4fa8-a16b-8af11d0a59ad//";
+#Ifdef UUID_ARRAY;
+#Endif;
+
+Release 1;
+Serial "220501";
+
+! Inform 6 constants
+Constant DEATH_MENTION_UNDO;
+Constant MAX_CARRIED = 5;
+Constant MAX_SCORE = 100;
+Constant NUMBER_TASKS = 5;
+Constant TASKS_PROVIDED;
+
+Array task_scores -> 20 20 20 20 20;
+
+Replace LockSub;
+Replace UnlockSub;
+
+! PunyInform constants
+Constant MSG_JUMP "You're a koala, not a kangaroo. Koalas don't jump.";
+Constant MSG_LISTEN_DEFAULT "You hear the sounds of the Australian bush.";
+Constant MSG_PARSER_NO_INPUT "You need to enter a command.";
+Constant MSG_PARSER_UNKNOWN_VERB "That's not a verb I recognise.";
+Constant MSG_SMELL_DEFAULT "You smell the subtle fragrance of the Australian bush.";
+Constant MSG_SORRY_DEFAULT "Oh, don't apologise.";
+Constant MSG_TAKE_YOURSELF "That would be a clever trick.";
+Constant MSG_THINK_DEFAULT "Think, Kenny, think.";
+Constant MSG_INVENTORY_DEFAULT 1000;
+Constant MSG_TAKE_NO_CAPACITY 1001;
+Constant OPTIONAL_EXTENDED_METAVERBS;
+Constant OPTIONAL_EXTENDED_VERBSET;
+Constant OPTIONAL_FULL_SCORE;
+Constant OPTIONAL_PRINT_SCENERY_CONTENTS;
+#Ifv5;
+Constant OPTIONAL_PROVIDE_UNDO;
+#Endif;
+
+! Game-specific constants
+Constant MAX_JOKES 20;
+Constant MAX_TUTORIAL 26;
+Constant TUT_ENTER_START 0;
+Constant TUT_AUTO1 1;
+Constant TUT_AUTO2 2;
+Constant TUT_AUTO3 3;
+Constant TUT_INVENTORY 4;
+Constant TUT_EXAMINE_NOTE 5;
+Constant TUT_READ_NOTE 6;
+Constant TUT_DROP_NOTE 7;
+Constant TUT_CANT_GO 8;
+Constant TUT_EXAMINE_DOOR 9;
+Constant TUT_OPEN_DOOR 10;
+Constant TUT_ENTER_ROOM02 11;
+Constant TUT_LEAVE_ROOM02 12;
+Constant TUT_ENTER_ROOM23 13;
+Constant TUT_TAKE_LEAVES 14;
+Constant TUT_ENTER_ROOM02_WITH_LEAVES 15;
+Constant TUT_ENTER_ROOM01_CLOSED_CUPBOARD 16;
+Constant TUT_ENTER_ROOM01_OPEN_CUPBOARD 17;
+Constant TUT_PUT_LEAVES_IN_CUPBOARD 18;
+Constant TUT_ENTER_ROOM03 19;
+Constant TUT_EXAMINE_CUPBOARD 20;
+Constant TUT_OPEN_CUPBOARD 21;
+Constant TUT_ENTER_DARK 22;
+Constant TUT_INVENTORY_FULL 23;
+Constant TUT_ASK_FOR_JOKE 24;
+Constant TUT_ENTER_ROOM04 25;
+Constant MURNONG_HINT "That murnong looks interesting. Maybe you should try to get it.";
+Constant CANT_TAKE_FLOWERS "This is no time to be picking flowers.";
+Constant CANT_TAKE_LEAVES "You only like gum leaves.";
+
+
+Include "globals.h";
+
+Array jokes -> MAX_JOKES;
+Array tutorial_used -> MAX_TUTORIAL;
+
+Global tutorial = true;
+Global tutorial_shown = false;
+
+Property size 100;
+
+!========================================
+! Entry point routines
+!========================================
+[ ChooseObjects obj code;
+  if (code == 2)
+  {
+    ! Stage 1: Disambiguation
+    if (action_to_be == ##Take && obj notin player)
+      return 1; !Appropriate
+    if (action_to_be == ##Drop && obj in player && obj hasnt worn)
+      return 1; !Appropriate
+    return 0; !Inappropriate
+  }
+  ! Stage 2: Processing an "all"
+  if (obj has scenery or concealed or static or animate)
+    return 2; !Force exclusion
+  if (action_to_be == ##Take && obj in location && obj ~= player)
+    return 1; !Force inclusion
+  if (action_to_be == ##Drop && obj in player && obj hasnt worn)
+    return 1; !Force inclusion
+  return 0; !Accept parser's decision
+];
+
+[ DisallowTakeAnimate;
+  if (noun == joey)
+    rfalse;
+];
+
+[ InScope person i;
+  if (person == player && location == thedark)
+    objectloop(i in parent(player))
+      if (i has moved)
+        PlaceInScope(i);
+  rfalse;
+];
+
+[ LibraryMessages p_msg p_arg_1 p_arg_2;
+  switch (p_msg)
+  {
+    MSG_INVENTORY_DEFAULT:
+      p_arg_1 = "You're carrying ";
+      if (inventory_style == 0)
+      {
+        p_arg_1 = "You're carrying:";
+        p_arg_2 = NEWLINE_BIT;
+      }
+      if (PrintContents(p_arg_1, player, p_arg_2))
+      {
+        if (inventory_style == 1)
+          print (char) '.';
+        new_line;
+        ShowTutorial(TUT_INVENTORY);
+        rtrue;
+      }
+      rfalse;
+    MSG_TAKE_NO_CAPACITY:
+      print "Your hands are full.^";
+      ShowTutorial(TUT_INVENTORY_FULL);
+      rtrue;
+  }
+];
+
+[ LookRoutine;
+  if (tutorial == false)
+    return;
+  if (location == room01 && leaves in player && cupboard hasnt open)
+    ShowTutorial(TUT_ENTER_ROOM01_CLOSED_CUPBOARD);
+  if (location == room01 && leaves in player && cupboard has open)
+    ShowTutorial(TUT_ENTER_ROOM01_OPEN_CUPBOARD);
+  if (location == room02 && leaves in player)
+    ShowTutorial(TUT_ENTER_ROOM02_WITH_LEAVES);
+  if (location == thedark && real_location == room18)
+    print "You can hear something scratching about in the leaf litter. You hope it's not the bunyip.";
+  if (location has visited)
+    return;
+  if (location == room01)
+    ShowTutorial(TUT_ENTER_START);
+  else if (location == room02)
+    ShowTutorial(TUT_ENTER_ROOM02);
+  else if (location == room04 or room15 or room20)
+    ShowTutorial(TUT_ENTER_ROOM04);
+  else if (location == room03 or room22 or room24)
+    ShowTutorial(TUT_ENTER_ROOM03);
+  else if (location == room23)
+    ShowTutorial(TUT_ENTER_ROOM23);
+  else if (location == thedark)
+    ShowTutorial(TUT_ENTER_DARK);
+];
+
+[ PrintRank;
+  print ", earning you the rank of ";
+  if (score == 0)
+    "bushfire danger.";
+  if (score == 20)
+    "bushfire hazard.";
+  if (score == 40)
+    "bushfire unprepared.";
+  if (score == 60)
+    "bushfire aware.";
+  if (score == 80)
+    "bushfire ready.";
+  if (score == 100)
+    "bushfire warden.";
+];
+
+[ PrintTaskName task_number;
+  switch (task_number) {
+      0: "for putting gum leaves in cupboard";
+      1: "for giving native yams to Wally Wombat";
+      2: "for opening closet for Ollie Owl";
+      3: "for returning Joey to Kelly Kangaroo";
+      4: "for giving termites to Eddie Echidna";
+  }
+];
+
+Include "puny.h";
+
+!========================================
+! Initialisation
+!========================================
+[ Initialise i j;
+  lookmode = 2;
+  move note to player;
+  switch (random(7))
+  {
+    1: move murnong to room07;
+    2: move murnong to room08;
+    3: move murnong to room09;
+    4: move murnong to room10;
+    5: move murnong to room11;
+    6: move murnong to room12;
+    7: move murnong to room13;
+  }
+  !Initialise order of jokes
+  for (i = 0: i < MAX_JOKES: i++)
+    jokes->i = i;
+  !Shuffle order of jokes
+  for (i = 1: i < MAX_JOKES: i++)
+  {
+    j = random(i + 1) - 1;
+    jokes->i = jokes->j;
+    jokes->j = i;
+   }
+  StartDaemon(room01);
+  location = room01;
+  player.description = PlayerDescription;
+  print "The weather is getting hotter and bushfire season is approaching. The animals have to stock up on food and prepare their bushfire survival plans.^^Every year, the animals appoint a bushfire warden. The bushfire warden has an important job to do, for he or she has to check on all the other animals and make sure that they have their bushfire survival plans in place.^^This year, it's Kenny Koala's turn to be the bushfire warden. He has a checklist of things to do. Can you help Kenny to complete all the things on his checklist?^^";
+  print_ret (italic)"[Kenny can move around, examine things and manipulate things. You control Kenny by typing simple text commands of one or more words, usually starting with a verb. The tutorial will offer suggestions to get you started. Commands in the tutorial are shown in upper case, but you can enter them in lower case, if you prefer. You can turn the tutorial off by typing TUTORIAL OFF and turn it back on by typing TUTORIAL ON. Good luck.]^";
+];
+
+!========================================
+! Room 1: Inside Your House
+!========================================
+Object room01 "Inside Your House"
+with
+  description "You're in your house inside the hollow trunk of an old gum tree. The front door is to the north.",
+  n_to
+  [;
+    if (tutorial && front_door hasnt open && tutorial_used->TUT_EXAMINE_DOOR == 0)
+    {
+      PrintMsg(MSG_ENTER_NOT_OPEN, front_door);
+      ShowTutorial(TUT_EXAMINE_DOOR);
+      rtrue;
+    }
+    if (tutorial && tutorial_used->TUT_AUTO3 == 0)
+    {
+      print "Not just yet...^";
+      ShowTutorial(TUT_AUTO3);
+      rtrue;
+    }
+    tutorial_used->TUT_CANT_GO = 1;
+    return front_door;
+  ],
+  cant_go
+  [;
+    PrintMsg(MSG_GO_CANT_GO);
+    ShowTutorial(TUT_CANT_GO);
+    rtrue;
+  ],
+  out_to
+  [;
+    <<Go FAKE_N_OBJ>>;
+  ],
+  before
+  [;
+    Exit:
+      <<Go FAKE_N_OBJ>>;
+    Hint:
+      if (note hasnt general)
+        "Make sure that you take an inventory and read the note so that you know what you need to do.";
+      if (front_door hasnt open)
+        "Open the front door if you want to leave.";
+      if (room23 hasnt visited)
+        "You can find some yummy gum leaves at the top of the tree outside your house.";
+      if (cupboard hasnt open)
+        "Open the cupboard if you're looking for somewhere to store the gum leaves.";
+      if (cupboard has open && leaves in player)
+        "Put the gum leaves in the cupboard.";
+      if (leaves in cupboard)
+        "There's nothing else to do here. Try completing the other tasks on your list.";
+    Listen:
+      if (noun == nothing)
+        "It's quiet in here.";
+    Smell:
+      if (noun == nothing)
+        "You can smell a hint of eucalyptus oil coming from the cupboard.";
+  ],
+  daemon
+  [;
+    if (score == 100)
+    {
+      deadflag = 2;
+      "^Congratulations. That's the last task. You can now rest at ease knowing that you and all the other animals will be relatively safe if there is a bushfire. Let's hope that there is no bushfire this year, so you don't have to put your bushfire survival plan into practice.";
+    }
+    if (action == ##Help or ##Hint)
+      return;
+    if (tutorial)
+    {
+      if (tutorial_shown == 0)
+        ShowTutorial(TUT_AUTO1);
+      if (tutorial_shown == 0)
+        ShowTutorial(TUT_AUTO2);
+      if (tutorial_shown == 0)
+        ShowTutorial(TUT_AUTO3);
+      if (tutorial_shown == 1)
+        tutorial_shown = 0;
+    }
+  ],
+has light;
+
+!----------------------------------------
+! Inside your house
+!----------------------------------------
+Object "house" room01
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'kenny^s' or 'koala^s' or 'my' or 'your' or 'house' or 'hollow' or 'trunk' or 'old' or 'gum' or 'eucalyptus' or 'tree')
+      count++;
+    return count;
+  ],
+  article "your",
+  description "Yes, this is definitely your house. It will provide good protection if there's a bushfire.",
+has scenery;
+
+!----------------------------------------
+! Front door
+!----------------------------------------
+Object front_door "front door"
+with
+  name 'front' 'door',
+  description
+  [;
+    print "The front door is made of wood. If it burns, it should only burn on the outside, so you will be protected until any bushfire passes. It's currently ";
+    if (self has open)
+      print "open.^";
+    else
+    {
+      print "closed.^";
+      ShowTutorial(TUT_EXAMINE_DOOR);
+    }
+    rtrue;
+  ],
+  door_dir
+  [;
+    if (self in room01)
+      return n_to;
+    else
+      return s_to;
+  ],
+  door_to
+  [;
+    if (self in room01)
+      return room02;
+    else
+      return room01;
+  ],
+  after
+  [;
+    Open:
+      if (self in room01)
+      {
+        PrintMsg(MSG_OPEN_DEFAULT, self);
+        ShowTutorial(TUT_OPEN_DOOR);
+        rtrue;
+      }
+  ],
+  found_in room01 room02,
+has door openable scenery;
+
+!----------------------------------------
+! Cupboard
+!----------------------------------------
+Object cupboard "cupboard" room01
+with
+  name 'cupboard',
+  description
+  [;
+    print "This is your food cupboard. This is where you keep your emergency supply of gum leaves in case there is a bushfire. ";
+    if (self has open && children(self) == 0)
+      "The cupboard is empty. You'd feel a lot better if there were some gum leaves in there.";
+    <Search self>;
+    ShowTutorial(TUT_EXAMINE_CUPBOARD);
+    rtrue;
+  ],
+  invent
+  [;
+    if (inventory_stage == 2)
+      rtrue;
+  ],
+  before
+  [;
+    LetGo:
+      if (noun == leaves)
+        "You went to a lot of trouble to get those gum leaves, so it would be silly to take them out again.";
+    Receive:
+      if (noun.size > self.size)
+        print_ret (The)noun, " won't fit in the cupboard.";
+  ],
+  after
+  [;
+    Receive:
+      if (noun == leaves)
+      {
+        Achieved(0);
+        PrintMsg(MSG_INSERT_DEFAULT);
+        ShowTutorial(TUT_PUT_LEAVES_IN_CUPBOARD);
+        rtrue;
+      }
+  ],
+  size 6,
+has container openable static;
+
+!----------------------------------------
+! Note
+!----------------------------------------
+Object note "note"
+with
+  name 'note' 'checklist' 'check' 'list',
+  description
+  [;
+    print "It looks important. Maybe you should read it.^";
+    ShowTutorial(TUT_EXAMINE_NOTE);
+    rtrue;
+  ],
+  before
+  [;
+    Read:
+      print "'Things to do before the bushfire season:^1. Put gum leaves in cupboard for me";
+      if (task_done->0 == 1)
+        print " (DONE)";
+      print "^2. Check on Wally Wombat";
+      if (task_done->1 == 1)
+        print " (DONE)";
+      print "^3. Check on Ollie Owl";
+      if (task_done->2 == 1)
+        print " (DONE)";
+      print "^4. Check on Kelly Kangaroo";
+      if (task_done->3 == 1)
+        print " (DONE)";
+      print "^5. Check on Eddie Echidna";
+      if (task_done->4 == 1)
+        print " (DONE)";
+      print "'^";
+      give self general;
+      ShowTutorial(TUT_READ_NOTE);
+      rtrue;
+  ],
+  after
+  [;
+    Drop:
+      PrintMsg(MSG_DROP_DROPPED);
+      ShowTutorial(TUT_DROP_NOTE);
+      rtrue;
+  ],
+  size 1,
+has;
+
+!========================================
+! Room 2: Outside Your House
+!========================================
+Object room02 "Outside Your House"
+with
+  description "Your house is in the giant gum tree to the south. You can see a sign above the door and hear buzzing coming from nearby. There are trails leading north, east and west.",
+  n_to room15,
+  s_to
+  [;
+    if (joey in player)
+      "You can't carry Joey into your house. It's barely big enough for you.";
+    return front_door;
+  ],
+  e_to room20,
+  w_to room03,
+  u_to
+  [;
+    if (rock in player)
+      "You can't carry the rock up the tree.";
+    if (joey in player)
+      "You can't carry Joey up the tree.";
+    else
+      return room23;
+  ],
+  in_to
+  [;
+    <<Go FAKE_S_OBJ>>;
+  ],
+  before
+  [;
+    Go:
+      if (selected_direction == n_to or e_to or w_to && tutorial && tutorial_used->TUT_LEAVE_ROOM02 == 0 && room23 hasnt visited)
+      {
+        print "Not just yet...^";
+        ShowTutorial(TUT_LEAVE_ROOM02);
+        rtrue;
+      }
+    Hint:
+      if (room23 hasnt visited)
+        "Where's that buzzing coming from?";
+      if (leaves hasnt moved)
+        "Did you forget the gum leaves?";
+    Listen:
+      if (noun == nothing)
+      {
+        print "You can hear buzzing coming from the top of the tree. ";
+        if (room23 hasnt visited)
+          "Maybe you should climb up there to investigate.";
+        else
+          "You know that it's from the bees.";
+      }
+    Smell:
+      if (noun == nothing)
+        "You can smell eucalyptus oil coming from the gum tree.";
+  ],
+  each_turn
+  [;
+    ForestBackground();
+  ],
+has light;
+
+!----------------------------------------
+! Your house
+!----------------------------------------
+Object "house" room02
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'kenny^s' or 'koala^s' or 'my' or 'your' or 'house' or 'home' or 'hollow' or 'trunk' or 'old')
+      count++;
+    return count;
+  ],
+  article "your",
+  description "This is your house. It's located in a hollow inside the trunk of this giant gum tree. It will provide good protection if there's a bushfire.",
+has scenery;
+
+!----------------------------------------
+! Gum tree
+!----------------------------------------
+Object "gum tree" room02
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'giant' or 'huge' or 'gum' or 'eucalyptus' or 'tree')
+      count++;
+    return count;
+  ],
+  description "It's a huge gum tree that towers over your house.",
+  before
+  [;
+    Climb:
+      if (self in room02)
+        <<Go FAKE_U_OBJ>>;
+      else
+        <<Go FAKE_D_OBJ>>;
+  ],
+  found_in room02 room23,
+has scenery;
+
+!----------------------------------------
+! Sign
+!----------------------------------------
+Object sign "sign" room02
+with
+  name 'sign',
+  description "It's a wooden sign nailed to the outside of your house. Why don't you read it?",
+  before
+  [;
+    Read:
+      "It says, 'Bushfire Warden'.";
+    Take:
+      "If you take the sign, the other animals won't be able to find you when they come to ask questions about their bushfire survival plan.";
+  ],
+has scenery;
+
+!----------------------------------------
+! Trails
+!----------------------------------------
+Object "trails" room02
+with
+  name 'trail' 'trails//p',
+  description "The main trail goes from east to west past your house and a smaller trail goes north.",
+has pluralname scenery;
+
+!========================================
+! Room 3: Western Trail
+!========================================
+Object room03 "Western Trail"
+with
+  name 'western' 'trail',
+  description "You're on the western trail. You can follow it to the east or west.",
+  e_to room02,
+  w_to room04,
+  before
+  [;
+    Hint:
+      if (eddie.state == 0)
+        "Try talking to Eddie.";
+      if (termites in nothing)
+        "You can find termites in the bush to the west of here.";
+      if (jar in player && termites in jar)
+        "Give the jar of termites to Eddie.";
+      if (jar notin eddie)
+        "Eddie has a sweet tooth.";
+    Smell:
+      if (noun == nothing)
+        "You can smell the native bluebells at the side of the trail.";
+  ],
+  each_turn
+  [;
+    TrailBackground();
+  ],
+has light;
+
+!----------------------------------------
+! Western trail
+!----------------------------------------
+Object "western trail" room03
+with
+  name 'western' 'trail',
+  article "the",
+  description "The trail is quite clear here. You can follow it to the west or back east to your house. There's a cluster of native bluebells growing beside the trail.",
+has scenery;
+
+!----------------------------------------
+! Native bluebells
+!----------------------------------------
+Object "native bluebells" room03
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'native' or 'bluebell' or 'bluebells//p' or 'ground-hugging' or 'plant' or 'plants//p' or 'pale' or 'blue' or 'star-shaped' or 'flower' or 'flowers//p' or 'yellow' or 'centre' or 'centres//p' or 'center' or 'centers//p')
+      count++;
+    return count;
+  ],
+  description "They're low, ground-hugging plants with pale blue star-shaped flowers and pale yellow centres.",
+  before
+  [;
+    Take:
+      print_ret (string)CANT_TAKE_FLOWERS;
+  ],
+has pluralname scenery;
+
+!----------------------------------------
+! Eddie Echidna
+!----------------------------------------
+Object eddie "Eddie Echidna" room03
+with
+  name 'eddie' 'echidna' 'spiny' 'anteater',
+  description
+  [;
+    print "Eddie is a monotreme with a long pointy mouth. His body is covered in coarse hair and spines, so don't get too close.";
+    if (self.state == 0)
+      print " You should talk to Eddie to see if he needs any help with his bushfire survival plan.";
+    "";
+  ],
+  life
+  [;
+    Attack:
+      "Eddie curls up into a spiky ball to defend himself against your attack. When he thinks the coast is clear, he goes back to his normal self.";
+    Give:
+      if (noun ~= jar || termites notin jar)
+        "~Thanks, but no thanks. I only need ants or termites.~";
+      move jar to eddie;
+      self.state = 2;
+      Achieved(4);
+      "~Ooh, thanks, Kenny. That will last me if there's a bushfire.~";
+    Talk:
+      if (self.state == 0)
+      {
+        self.state = 1;
+        "You ask Eddie if he's prepared for any bushfires. ~I can scurry into one of my burrows, but I don't have a good supply of food. Do you happen to have any ants or termites?~";
+      }
+      if (self.state == 1)
+        "~Have you found any ants or termites? There's none around here.~";
+      "~Thanks for the termites, Kenny. I'll save them in case there's a bushfire. It was a good idea to put them in honey, as that will preserve them.~";
+  ],
+  state 0,
+has animate proper;
+
+!----------------------------------------
+! Eddie's mouth
+!----------------------------------------
+Object "Eddie's mouth" room03
+with
+  name 'mouth' 'tongue',
+  description "Eddie has a long pointy mouth with an even longer tongue that he uses to catch ants and termites and other insects.",
+has scenery;
+
+!----------------------------------------
+! Eddie's spikes
+!----------------------------------------
+Object "Eddie's spikes" room03
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'coarse' or 'hair' or 'hairs//p' or 'spine' or 'spines//p' or 'spike' or 'spikes//p' or 'quill' or 'quills//p')
+      count++;
+    return count;
+  ],
+  description "The spines are modified hairs made of keratin. They are very sharp. Eddie uses them for defence against predators.",
+has scenery;
+
+!========================================
+! Room 4: End of Western Trail
+!========================================
+Object room04 "End of Western Trail"
+with
+  description "The main trail ends at a burrow leading downwards to the south, but there is another faint trail leading north.",
+  n_to room06,
+  s_to
+  [;
+    if (joey in player)
+      "You can't fit in the burrow while you're carrying Joey.";
+    else
+      return room05;
+  ],
+  e_to room03,
+  d_to room05,
+  in_to room05,
+  before
+  [;
+    Hint:
+      if (room05 hasnt visited)
+        "Why don't you go down the burrow? You should fit.";
+      if (room06 hasnt visited)
+        "The bush is to the north. You'll need to go there sooner or later.";
+  ],
+  each_turn
+  [;
+    TrailBackground();
+  ],
+has light;
+
+!----------------------------------------
+! Western trail
+!----------------------------------------
+Object "western trail" room04
+with
+  name 'end' 'main' 'western' 'trail',
+  article "the",
+  description "The main trail ends here. You can follow it back to the east or there is a faint trail to the north.",
+has scenery;
+
+!----------------------------------------
+! Burrow
+!----------------------------------------
+Object "burrow" room04
+with
+  name 'burrow',
+  description "This is Wally Wombat's burrow. You and Wally are about the same size, so you should be able to enter it.",
+  before
+  [;
+    Enter:
+      <<Go FAKE_D_OBJ>>;
+  ],
+has scenery;
+
+!========================================
+! Room 5: Wally Wombat's Burrow
+!========================================
+Object room05 "Wally Wombat's Burrow"
+with
+  description "You're in Wally Wombat's burrow. It's deep underground, so it's well protected from any bushfires. The only exit from the burrow leads up to the daylight outside.",
+  n_to room04,
+  u_to room04,
+  out_to room04,
+  before
+  [;
+    Hint:
+      if (wally.state == 0)
+        "Try talking to Wally.";
+      if (jar hasnt moved)
+        "That jar could be useful. Wally won't mind if you take it.";
+      if (murnong notin nothing)
+        "You should be able to find some roots or tubers in the bush to the north of here, but look everywhere, as it may not be easy to find.";
+      if (yams in player)
+        "Give the native yams to Wally.";
+      if (yams in wally)
+        "There's nothing else to do here.";
+    Listen:
+      if (noun == nothing)
+        "It's quiet in here, apart from Wally's occasional grunting.";
+    Smell:
+      if (noun == nothing)
+        "It smells very musty in here. You're not sure if it's from the burrow or from Wally. You think it might be Wally.";
+  ],
+has light;
+
+!----------------------------------------
+! Wally Wombat's burrow
+!----------------------------------------
+Object "Wally Wombat's burrow" room05
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'wally^s' or 'wombat^s' or 'burrow' or 'bare' or 'earth' or 'wall' or 'walls//p')
+      count++;
+    return count;
+  ],
+  description "Wally Wombat's burrow is dug out of the bare earth. The walls look solid, so it's not likely to cave in. In fact, it looks quite cosy.",
+has proper scenery;
+
+!----------------------------------------
+! Wally Wombat
+!----------------------------------------
+Object wally "Wally Wombat" room05
+with
+  name 'bare-nosed' 'wally' 'wombat',
+  description
+  [;
+    print "Wally is a bare-nosed wombat. He's a short, stocky, barrel-shaped marsupial with short muscular legs, sharp claws, a stubby tail, small eyes and coarse brown fur.";
+    if (self.state == 0)
+      print " Maybe you should talk to him to see if he needs any help with his bushfire survival plan.";
+    "";
+  ],
+  life
+  [;
+    Ask:
+      if (second == 'murnong' or 'tuber' or 'tubers' or 'root' or 'roots')
+        "~There should be some north of here.~";
+    Give:
+      if (noun == yams && yams in player)
+      {
+        move yams to self;
+        Achieved(1);
+        "~Thanks for all the yams, Kenny. I'll save them for the bushfire season.~";
+      }
+    Talk:
+      if (self.state == 0)
+      {
+        self.state = 1;
+        "~G'day Kenny. Would you be able to get me some food for the bushfire season? I can get plenty of grass and leaves, but that won't last in storage. I need something like a large tree root or tuber. You should be able to find some in the bush to the north of here, but it's too far for me to walk on my short legs.~";
+      }
+  ],
+  state 0,
+has animate proper;
+
+!----------------------------------------
+! Wally's legs
+!----------------------------------------
+Object "Wally's legs" room05
+with
+  name 'leg' 'legs//p',
+  description "Wally's legs are very strong. He uses the front legs to dig and the rear legs to push the soil out behind him.",
+has pluralname scenery;
+
+!----------------------------------------
+! Wally's claws
+!----------------------------------------
+Object "Wally's claws" room05
+with
+  name 'sharp' 'claw' 'claws//p',
+  description "Wally's claws are very sharp.",
+has pluralname scenery;
+
+!----------------------------------------
+! Wally's tail
+!----------------------------------------
+Object "Wally's tail" room05
+with
+  name 'tail',
+  description "Wally's tail is really small. It's almost not there.",
+has scenery;
+
+!----------------------------------------
+! Wally's fur
+!----------------------------------------
+Object "Wally's fur" room05
+with
+  name 'fur' 'coat',
+  description "Wally's fur is very coarse.",
+has scenery;
+
+!----------------------------------------
+! Wally's eyes
+!----------------------------------------
+Object "Wally's eyes" room05
+with
+  name 'small' 'beady' 'eye' 'eyes//p',
+  description "Wally has small beady eyes.",
+has pluralname scenery;
+
+!----------------------------------------
+! Clay jar
+!----------------------------------------
+Object jar "clay jar" room05
+with
+  name 'clay' 'jar' 'pot',
+  description
+  [;
+    print "It's a clay jar that Wally uses for storing things. ";
+    <<Search self>>;
+  ],
+  invent
+  [;
+    if (inventory_stage == 2)
+    {
+      if (action == ##Inv && inventory_style == 0)
+        PrintContents(0, self);
+      else if (PrintContents(" (which contains ", self))
+        print ")";
+      rtrue;
+    }
+  ],
+  before
+  [;
+    Drop:
+      if (eddie in location && termites in self)
+        <<Give self eddie>>;
+    Receive:
+      if (noun.size > self.size)
+        print_ret (The)noun, " won't fit in the clay jar.";
+      if (noun == honey && children(self) > 0)
+        "You'll have to empty the jar before putting any honey in it or its contents will get very sticky.";
+  ],
+  size 3,
+has container open;
+
+!========================================
+! Room 6: In the Bush
+!========================================
+Object room06 "In the Bush"
+with
+  description "You're in the bush. The bush continues to the north, east and west or you can go south to return to the western trail.",
+  n_to room14,
+  s_to room04,
+  e_to room13,
+  w_to room07,
+  before
+  [;
+    Hint:
+      if (kylie.state == 0)
+        "Try talking to Kylie.";
+      if (kylie.state == 1)
+        "Try telling Kylie a joke.";
+      if (kylie.state == 2)
+        "Try telling Kylie another joke.";
+      if (kylie.state == 3 && room15 hasnt visited)
+        "Try exploring a bit more, then come back and tell Kylie about any problems you face.";
+      if (kylie.state == 3 && room15 has visited && snake notin nothing)
+        "Try telling Kylie about the snake.";
+  ],
+  each_turn
+  [;
+    BushBackground();
+  ],
+has light;
+
+!----------------------------------------
+! Bush
+!----------------------------------------
+Object "bush"
+with
+  name 'bush' 'bushland' 'sclerophyll' 'forest',
+  article "the",
+  description "You're in a dry sclerophyll forest, typical of the bush in the south-eastern areas of Australia.",
+  found_in
+  [;
+    if (location == room06 or room07 or room08 or room09 or room10 or room11 or room12 or room13 or room14)
+      rtrue;
+  ],
+has scenery;
+
+!----------------------------------------
+! Dead tree
+!----------------------------------------
+Object dead_tree "dead tree" room06
+with
+  name 'branch' 'dead' 'tree',
+  description "This is a dead tree, blackened by a past bushfire and partially eaten by termites.",
+has scenery;
+
+!----------------------------------------
+! Kylie Kookaburra
+!----------------------------------------
+Object kylie "Kylie Kookaburra" room06
+with
+  name 'kylie' 'kookaburra',
+  initial "Kylie Kookaburra is perched on the branch of a dead tree.",
+  description
+  [;
+    print "Kylie is a stubby bird with grey-brown upper body, white lower body, blue-tipped wings and a reddish tail. ";
+    if (self.state == 0)
+      "She looks sad. That's unusual for a kookaburra, as they are usually laughing. Maybe you should talk to her.";
+    if (self.state == 1)
+      "She still looks sad. Maybe you should tell her a joke.";
+    if (self.state == 2)
+      "She doesn't look quite so sad now. Maybe you should tell her another joke.";
+    if (self.state == 3)
+      "She looks happy now. Maybe you should talk to her some more.";
+  ],
+  life
+  [;
+    Ask:
+      if (self.state < 3)
+        "Kylie says, ~I'm not in the mood. Tell me a joke and I might feel better, then I can help you.";
+      if (second == 'common' or 'brown' or 'snake')
+        <<Tell self second>>;
+    Talk:
+      if (self.state == 0)
+      {
+        self.state = 1;
+        "~Hello Kenny. I'm feeling a bit down in the dumps today. Could you tell me a joke to cheer me up?~";
+      }
+      if (self.state == 1)
+        "~Can you tell me a joke?~";
+      if (self.state == 2)
+        "~I'm feeling a bit better now. Can you tell me another joke?~";
+      if (self.state == 3)
+        "~Kookookoo kaakaakaa.~";
+    Tell:
+      if (second == 'joke' or 'riddle')
+      {
+        if (joke.number == 0)
+          "You don't know any jokes. Maybe one of the other animals can tell you some jokes, then you can tell them to Kylie.";
+        if (self.state < 2)
+        {
+          self.state = 2;
+          "Kylie smiles. ~That was funny. Tell me another one.~";
+        }
+        if (joke.number == 1)
+          "You don't know any more jokes. Maybe Pete Platypus can tell you some more.";
+        if (self.state == 2)
+        {
+          self.state = 3;
+          "Kylie starts laughing. ~Kookookoo kaakaakaa. That was funny. You've really cheered me up. I owe you a favour. If you need any help with anything, just tell me about it.~";
+        }
+        "Kylie starts laughing again. ~Kookookoo kaakaakaa.~";
+      }
+      if (second == 'common' or 'brown' or 'snake')
+      {
+        if (self.state == 3)
+        {
+          remove snake;
+          remove kylie;
+          move dead_snake to location;
+          give dead_tree ~scenery static;
+          "You tell Kylie about the brown snake that's blocking the northern trail from your house. She just laughs ~Kookookoo~ and flies off. A little while later, she returns, drops a dead snake at your feet and flies off again laughing ~Kookookoo kaakaakaa~.";
+        }
+      }
+  ],
+  state 0,
+has animate female proper;
+
+!----------------------------------------
+! Dead snake
+!----------------------------------------
+Object dead_snake "dead snake"
+with
+  name 'dead' 'snake',
+  description "It's a common brown snake, about 1 m long. It's as dead as a doornail, so it won't be biting anyone today.",
+  before
+  [;
+    Take:
+      "Er, no thank you. Whether it's dead or alive, you'd prefer to keep a safe distance from any venomous snake.";
+  ],
+has neuter static;
+
+!----------------------------------------
+! Murnong
+!----------------------------------------
+Object murnong "clump of murnong"
+with
+  name 'clump' 'murnong' 'daisy' 'daisies//p',
+  description "It's a large clump of yellow daisy or dandelion-like flowers. You've seen Wally digging these up before.",
+  before
+  [;
+    Dig, Take:
+      remove self;
+      move yams to location;
+      print "You try to pull the flowers out of the ground, but they're attached to something. You dig around the flowers with your sharp claws to soften the dry soil and pull up a big bunch of native yams. You shake the dirt off and place them on the ground.";
+      if (wally.state > 0)
+        print " Wow! Wally will love these.";
+      "";
+  ],
+has;
+
+!----------------------------------------
+! Native yams
+!----------------------------------------
+Object yams "native yams"
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'native' or 'yam' or 'yams//p' or 'milky' or 'white' or 'tuberous' or 'tuber' or 'root' or 'roots//p')
+      count++;
+    return count;
+  ],
+  description "The yams are milky-white tuberous roots. There's enough there to last one wombat during a bushfire.",
+  before
+  [;
+    Drop:
+      if (wally in location)
+        <<Give self wally>>;
+    Eat:
+      print_ret (string)CANT_TAKE_LEAVES;
+  ],
+  size 4,
+has edible pluralname;
+
+!========================================
+! Room 7: In the Bush
+!========================================
+Object room07 "In the Bush"
+with
+  description "You're in the bush. The bush continues to the north and east.",
+  n_to room08,
+  e_to room06,
+  before
+  [;
+    Hint:
+      if (murnong in self)
+        print_ret (string)MURNONG_HINT;
+  ],
+  each_turn
+  [;
+    BushBackground();
+  ],
+has light;
+
+!----------------------------------------
+! Waratah
+!----------------------------------------
+Object "waratah" room07
+with
+  name 'waratah' 'tree' 'bush' 'shrub',
+  description
+  [;
+    "The waratah (or ", (italic)"telopea", ") has large dark green leaves with a few large bright red flowers shaped like a ball.";
+  ],
+has static;
+
+!----------------------------------------
+! Waratah leaves
+!----------------------------------------
+Object "waratah leaves" room07
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'dark' or 'green' or 'leaf' or 'leaves//p' or 'vein' or 'veins//p')
+      count++;
+    return count;
+  ],
+  description "The leaves are dark green with lighter green veins and a glossy finish.",
+  before
+  [;
+    Take:
+      print_ret (string)CANT_TAKE_LEAVES;
+  ],
+has pluralname scenery;
+
+!----------------------------------------
+! Waratah flowers
+!----------------------------------------
+Object "waratah flowers" room07
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'large' or 'bright' or 'red' or 'flower' or 'flowers//p' or 'ball' or 'balls//p')
+      count++;
+    return count;
+  ],
+  description "There aren't many flowers, but what they lack in quantity, they make up for in quality. Each bright red flower looks like dozens of fingers clutching a large ball.",
+  before
+  [;
+    Take:
+      print_ret (string)CANT_TAKE_FLOWERS;
+  ],
+has pluralname scenery;
+
+!========================================
+! Room 8: In the Bush
+!========================================
+Object room08 "In the Bush"
+with
+  description "You're in the bush. The bush continues to the north, south and east.",
+  n_to room09,
+  s_to room07,
+  e_to room14,
+  before
+  [;
+    Hint:
+      if (murnong in self)
+        print_ret (string)MURNONG_HINT;
+  ],
+  each_turn
+  [;
+    BushBackground();
+  ],
+has light;
+
+!----------------------------------------
+! Wattle tree
+!----------------------------------------
+Object "wattle" room08
+with
+  name 'wattle' 'tree' 'acacia',
+  description
+  [;
+    "The wattle (or ", (italic)"acacia", ") has long, skinny green leaves and beautiful yellow flower balls. There aren't many flowers left on this tree, as it is the end of the flowering season.";
+  ],
+has static;
+
+!----------------------------------------
+! Wattle leaves
+!----------------------------------------
+Object "wattle leaves" room08
+with
+  name 'skinny' 'green' 'leaf' 'leaves//p',
+  description "Like all things in the Australian bush, they're very tough.",
+  before
+  [;
+    Take:
+      print_ret (string)CANT_TAKE_LEAVES;
+  ],
+has pluralname scenery;
+
+!----------------------------------------
+! Wattle flowers
+!----------------------------------------
+Object "wattle flowers" room08
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'furry' or 'yellow' or 'flower' or 'flowers//p' or 'ball' or 'balls//p' or 'cluster' or 'clusters//p')
+      count++;
+    return count;
+  ],
+  description "They are little puffs of furry yellow flowers growing in clusters.",
+  before
+  [;
+    Take:
+      print_ret (string)CANT_TAKE_FLOWERS;
+  ],
+has pluralname scenery;
+
+!========================================
+! Room 9: In the Bush
+!========================================
+Object room09 "In the Bush"
+with
+  description "You're in the bush. The bush continues to the south and east.",
+  s_to room08,
+  e_to room10,
+  before
+  [;
+    Hint:
+      if (murnong in self)
+        print_ret (string)MURNONG_HINT;
+  ],
+  each_turn
+  [;
+    BushBackground();
+  ],
+has light;
+
+!----------------------------------------
+! Banksia tree
+!----------------------------------------
+Object "banksia" room09
+with
+  name 'banksia' 'tree',
+  description "It has stiff green leaves with serated edges, brown seed pods and fiery orange flowers.",
+has static;
+
+!----------------------------------------
+! Banksia leaves
+!----------------------------------------
+Object "banksia leaves" room09
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'green' or 'leaf' or 'leaves//p' or 'serated' or 'edge' or 'edges//p')
+      count++;
+    return count;
+  ],
+  description "Like all things in the Australian bush, they're very tough.",
+  before
+  [;
+    Take:
+      print_ret (string)CANT_TAKE_LEAVES;
+  ],
+has pluralname scenery;
+
+!----------------------------------------
+! Banksia seed pods
+!----------------------------------------
+Object "banksia seed pods" room09
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'brown' or 'seed' or 'seeds//p' or 'pod' or 'pods//p')
+      count++;
+    return count;
+  ],
+  description "They're like a tangled clump of string with large shiny seeds protruding from the sides.",
+has pluralname scenery;
+
+!----------------------------------------
+! Banksia flowers
+!----------------------------------------
+Object "banksia flowers" room09
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'fiery' or 'orange' or 'flower' or 'flowers//p' or 'nectar')
+      count++;
+    return count;
+  ],
+  description "They're cyclindrical orange flowers shaped like a bottle brush, but much coarser than those of the bottlebrush tree. They're full of nectar.",
+  before
+  [;
+    Take:
+      print_ret (string)CANT_TAKE_FLOWERS;
+  ],
+has pluralname scenery;
+
+!========================================
+! Room 10: In the Bush
+!========================================
+Object room10 "In the Bush"
+with
+  description "You're in the bush. The bush continues to the south, east and west.",
+  s_to room14,
+  e_to room11,
+  w_to room09,
+  before
+  [;
+    Hint:
+      if (murnong in self)
+        print_ret (string)MURNONG_HINT;
+    Listen:
+      if (noun == nothing)
+        "The lorikeets are very noisy.";
+  ],
+  each_turn
+  [;
+    BushBackground();
+  ],
+has light;
+
+!----------------------------------------
+! Bottlebrush tree
+!----------------------------------------
+Object "bottlebrush" room10
+with
+  name 'bottlebrush' 'tree' 'callistemon',
+  initial "You can see a bottlebrush full of rainbow lorikeets here.",
+  description
+  [;
+    "The bottlebrush (or ", (italic)"callistemon", ") has stiff green leaves and cylindrical red, brush-shaped flowers. It is full of rainbow lorikeets, chattering away amongst themselves.";
+  ],
+has static;
+
+!----------------------------------------
+! Bottlebrush leaves
+!----------------------------------------
+Object "bottlebrush leaves" room10
+with
+  name 'stiff' 'green' 'leaf' 'leaves//p',
+  description "Like all things in the Australian bush, they're very tough.",
+  before
+  [;
+    Take:
+      print_ret (string)CANT_TAKE_LEAVES;
+  ],
+has pluralname scenery;
+
+!----------------------------------------
+! Bottlebrush flowers
+!----------------------------------------
+Object "bottlebrush flowers" room10
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'flower' or 'flowers//p' or 'seed' or 'seeds//p' or 'pod' or 'pods//p' or 'nectar')
+      count++;
+    return count;
+  ],
+  description "Each flower is about 10 cm long, consisting of seed pods and thin red bristles emanating from the end of a branch.",
+  before
+  [;
+    Take:
+      print_ret (string)CANT_TAKE_FLOWERS;
+  ],
+has pluralname scenery;
+
+!----------------------------------------
+! Lorikeets
+!----------------------------------------
+Object "rainbow lorikeets" room10
+with
+  name 'rainbow' 'lorikeet' 'lorikeets//p',
+  description "The rainbow lorikeets are medium-sized parrots with a bright green back and wings, blue head and belly, and a red, orange and yellow chest. They are very noisy as they fight for the nectar in the bottlebrush flowers.",
+  before
+  [;
+    Talk:
+      "The lorikeets can't hear you over all the noise they're making.";
+  ],
+has pluralname scenery;
+
+!========================================
+! Room 11: In the Bush
+!========================================
+Object room11 "In the Bush"
+with
+  description "You're in the bush. The bush continues to the south and west.",
+  s_to room12,
+  w_to room10,
+  before
+  [;
+    Hint:
+      if (murnong in self)
+        print_ret (string)MURNONG_HINT;
+  ],
+  each_turn
+  [;
+    BushBackground();
+  ],
+has light;
+
+!----------------------------------------
+! Grevillea
+!----------------------------------------
+Object "grevillea" room11
+with
+  name 'grevillea',
+  description "It has light green furry leaves with bright pink flowers shaped like a spider.",
+has static;
+
+!----------------------------------------
+! Grevillea leaves
+!----------------------------------------
+Object "grevillea leaves" room11
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'fern-like' or 'light' or 'green' or 'leaf' or 'leaves//p')
+      count++;
+    return count;
+  ],
+  description "The light green leaves are narrow and widely spaced, giving them a somewhat fern-like appearance.",
+  before
+  [;
+    Take:
+      print_ret (string)CANT_TAKE_LEAVES;
+  ],
+has pluralname scenery;
+
+!----------------------------------------
+! Grevillea flowers
+!----------------------------------------
+Object "grevillea flowers" room11
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'bright' or 'pink' or 'spider' or 'flower' or 'flowers//p' or 'cluster' or 'bulb-like' or 'shape' or 'shapes//p')
+      count++;
+    return count;
+  ],
+  description "The bright pink flowers grow in a cluster of bulb-like shapes with long thin tendrils. This gives them a spider-like appearance, which is probably why the grevillea is sometimes called the spider flower.",
+  before
+  [;
+    Take:
+      print_ret (string)CANT_TAKE_FLOWERS;
+  ],
+has pluralname scenery;
+
+!========================================
+! Room 12: In the Bush
+!========================================
+Object room12 "In the Bush"
+with
+  description "You're in the bush. The bush continues to the north, south and west.",
+  n_to room11,
+  s_to room13,
+  w_to room14,
+  before
+  [;
+    Hint:
+      if (murnong in self)
+        print_ret (string)MURNONG_HINT;
+  ],
+  each_turn
+  [;
+    if (action == ##Help or ##Hint)
+      return;
+    if (random(5) == 1)
+      switch(random(3))
+      {
+        1: "^The leaves of the grass tree blow in the breeze.";
+        2: "^Some insects fly around the flowers at the top of the grass tree.";
+        3: "^A lorikeet lands on the spike at the top of the grass tree, eats some nectar, then flies off again.";
+      }
+  ],
+has light;
+
+!----------------------------------------
+! Grass tree
+!----------------------------------------
+Object "grass tree" room12
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'grass' or 'tree' or 'xanthorrhea' or 'black' or 'boy')
+      count++;
+    return count;
+  ],
+  description
+  [;
+    "The grass tree (or ", (italic)"xanthorrhea", ") has a short trunk blackened from a past bushfire. There's a large cluster of very thin, spiky leaves at the top of the trunk and a single spear-like spike growing up from the centre.";
+  ],
+has static;
+
+!----------------------------------------
+! Grass tree trunk
+!----------------------------------------
+Object "grass tree trunk" room12
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'blackened' or 'trunk' or 'base' or 'bases//p' or 'resin')
+      count++;
+    return count;
+  ],
+  description "The trunk is not much taller than you. It's made from old leaf bases stacked on top of each other and stuck together by a naturally occurring resin.",
+has scenery;
+
+!----------------------------------------
+! Grass tree leaves
+!----------------------------------------
+Object "grass tree leaves" room12
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'large' or 'cluster' or 'thin' or 'spiky' or 'leaf' or 'leaves//p' or 'skirt')
+      count++;
+    return count;
+  ],
+  description "There are thousands of long thin spiky leaves that look like they're growing from a single point like a cheerleader's pom pom. The older leaves hang down like a skirt around the base of the trunk.",
+  before
+  [;
+    Take:
+      print_ret (string)CANT_TAKE_LEAVES;
+  ],
+has pluralname scenery;
+
+!----------------------------------------
+!Grass tree spike
+!----------------------------------------
+Object "grass tree spike" room12
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'spike' or 'spear-like' or 'spike' or 'tiny' or 'white' or 'flower' or 'flowers//p' or 'tight-packed' or 'spiral' or 'nectar')
+      count++;
+    return count;
+  ],
+  description "The spike is at least 1 m long with thousands of tiny white flowers growing in a tight-packed spiral around the top of the spike.",
+  before
+  [;
+    Take:
+      print_ret (string)CANT_TAKE_FLOWERS;
+  ],
+has scenery;
+
+!========================================
+! Room 13: In the Bush
+!========================================
+Object room13 "In the Bush"
+with
+  description "You're in the bush. The bush continues to the north and west.",
+  n_to room12,
+  w_to room06,
+  before
+  [;
+    Hint:
+      if (murnong in self)
+        print_ret (string)MURNONG_HINT;
+  ],
+  each_turn
+  [;
+    BushBackground();
+  ],
+has light;
+
+!----------------------------------------
+! Paperbark tree
+!----------------------------------------
+Object "paperbark" room13
+with
+  name 'paperbark' 'tree',
+  description "It's a small tree with a papery bark covering its trunk. It has grey-green leaves and white bottlebrush-like flowers.",
+has static;
+
+!----------------------------------------
+! Paperbark trunk
+!----------------------------------------
+Object "paperbark trunk" room13
+with
+  name 'trunk' 'paper' 'papery' 'bark',
+  description "The trunk is covered by a thick white, beige and grey papery bark.",
+has scenery;
+
+!----------------------------------------
+! Paperbark leaves
+!----------------------------------------
+Object "paperbark leaves" room13
+with
+  name 'leaf' 'leaves//p',
+  description "They are long, stiff, grey-green leaves that are pointy at the ends.",
+  before
+  [;
+    Take:
+      print_ret (string)CANT_TAKE_LEAVES;
+  ],
+has pluralname scenery;
+
+!----------------------------------------
+! Paperbark flowers
+!----------------------------------------
+Object "paperbark flowers" room13
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'flower' or 'flowers//p' or 'cluster' or 'clusters//p' or 'white' or 'stem' or 'stems//p' or 'yellow' or 'pollen')
+      count++;
+    return count;
+  ],
+  description "The flowers consist of little clusters of white stems, somewhat like a bottlebrush, with yellow pollen.",
+  before
+  [;
+    Take:
+      print_ret (string)CANT_TAKE_FLOWERS;
+  ],
+has pluralname scenery;
+
+!========================================
+! Room 14: In the Bush
+!========================================
+Object room14 "In the Bush"
+with
+  description "You're in the bush. The bush continues to the north, south, east and west.",
+  n_to room10,
+  s_to room06,
+  e_to room12,
+  w_to room08,
+  before
+  [;
+    Hint:
+      if (mound in self && eddie.state == 0)
+        "Termite mounds contain termites. Do you know anyone who eats termites?";
+      if (mound in self)
+        "Termite mounds contain termites. Eddie eats termites. You just need something heavy to break the termite mound so that you can get to the termites.";
+      if (termites in self && jar in player && honey in jar)
+        "Now that you've got something sticky, try getting the termites or putting them in the jar.";
+      if (termites in self)
+        "Termites, termites everywhere. You need something sticky to catch them.";
+      if (jar in player && termites in jar)
+        "Now that you've got a jar full of termites, try giving the jar to Eddie.";
+  ],
+  each_turn
+  [;
+    BushBackground();
+  ],
+has light;
+
+!----------------------------------------
+! Termite mound
+!----------------------------------------
+Object mound "termite mound" room14
+with
+  name 'termite' 'mound',
+  description "It's a termite mound that faces north-south.",
+  before
+  [;
+    Attack:
+      if (second == nothing && rock in player)
+      {
+        print "(with the rock)^";
+        <<Attack self rock>>;
+      }
+      if (second == nothing)
+        "You try breaking it with your bare paws, but it's as solid as a rock. You'll need something equally hard to break it.";
+      if (second ~= rock)
+        "You can't break the mound with ", (ThatOrThose)second, ".";
+      remove self;
+      give termites ~scenery;
+      move remains to location;
+      "You smash the termite mound with the rock and hundreds of termites start running all over the place.";
+  ],
+has static;
+
+!----------------------------------------
+! Remains of termite mound
+!----------------------------------------
+Object remains "remains of a termite mound"
+with
+  name 'remains//p' 'termite' 'mound',
+  article "the",
+  description "It's the crumbled mess of the termite mound that you smashed.",
+  before
+  [;
+    Attack:
+      "You've already smashed it to bits. You can't do any more damage than you've already done.";
+  ],
+has static;
+
+!----------------------------------------
+! Termites
+!----------------------------------------
+Object termites "termites" room14
+with
+  name 'termites//p',
+  article "hundreds of",
+  description
+  [;
+    if(self has scenery)
+      "You can't see any. They're probably hiding in the termite mound out of the heat.";
+    print "There are hundreds of termites ";
+    if (self notin jar)
+      "running all over the place. I think they're angry that you broke their home.";
+    "stuck in the honey.";
+  ],
+  before
+  [;
+    Give:
+      if (self in jar && second ~= nothing)
+        <<give jar second>>;
+    Take, Transfer:
+      if (self has scenery)
+        "You'll have to get them out of the mound first. Maybe you could break the mound?";
+      if (jar notin player || honey notin jar)
+        "They run up your arms and legs and scatter all over the place. There are too many of them. You'll need something to catch them, maybe something sticky.";
+      if (termites in jar)
+        "They're already in the jar.";
+      move self to jar;
+      "It takes a while, but you catch hundreds of termites and sprinkle them into the honey in the jar.";
+  ],
+  size 3,
+has pluralname scenery;
+
+!========================================
+! Room 15: Edge of Forest
+!========================================
+Object room15 "Edge of Forest"
+with
+  description "You're at the edge of a forest. The forest is to the north, but it looks a little scary that way. It looks much safer back to the south.",
+  n_to
+  [;
+    if (snake in self)
+      "There's a brown snake blocking the trail and you can't see a way to get around it. You're too big for it to eat, but you don't want to be its next victim.";
+    else
+      return room16;
+  ],
+  s_to room02,
+  before
+  [;
+    Hint:
+      if (snake in self && room06 hasnt visited)
+        "I don't like the look of that snake. Go exploring elsewhere and come back later.";
+      if (snake in self && kylie.state < 3)
+        "Kookaburras eat snakes and lizards. Maybe Kylie can help.";
+      if (snake in self)
+        "Tell Kylie about the snake.";
+  ],
+  each_turn
+  [;
+    ForestBackground();
+  ],
+has light;
+
+!----------------------------------------
+! Edge of forest
+!----------------------------------------
+Object "edge of the forest" room15
+with
+  name 'edge' 'forest' 'tree' 'trees//p',
+  article "the",
+  description "The trees get thicker to the north.",
+has scenery;
+
+!----------------------------------------
+! Brown snake
+!----------------------------------------
+Object snake "brown snake" room15
+with
+  name 'common' 'brown' 'snake',
+  description "It's a common brown snake. It's only a small one, maybe 1 m long, but it's the second-most venomous land snake in the world. Ollie Owl once told you that it's responsible for 60% of human snake-bite deaths in Australia.",
+  life
+  [;
+    Attack:
+      "Are you crazy? The brown snake is one of the most aggressive snakes in Australia. If you try to attack it, it will surely attack you first.";
+    Kiss:
+      "The only kiss the brown snake will give you is the kiss of death.";
+    Talk:
+      "~Hissss.~";
+  ],
+  before
+  [;
+    Take:
+      "Are you crazy? A brown snake can easily kill a defenceless koala.";
+  ],
+has animate neuter;
+
+!========================================
+! Room 16: Outside Ollie Owl's House
+!========================================
+Object room16 "Outside Ollie Owl's House"
+with
+  description "You're standing at the base of an old gum tree below Ollie Owl's house. It's very dark here and it gets darker as the trees get thicker to the north. You prefer the sunnier, open bushland back to the south. Otherwise, you can climb up to Ollie Owl's house.",
+  n_to room18,
+  s_to room15,
+  u_to
+  [;
+    if (rock in player)
+      "You can't carry the rock up the tree.";
+    if (joey in player)
+      "You can't carry Joey up the tree.";
+    return room17;
+  ],
+  before
+  [;
+    Hint:
+      if (room18 hasnt visited && room17 hasnt visited)
+        "You have a choice here. I'd suggest going north, first.";
+      if (room17 hasnt visited)
+        "Try going up or climbing the tree.";
+    Smell:
+      if (noun == nothing)
+        "You can smell eucalyptus oil coming from the gum tree.";
+  ],
+  each_turn
+  [;
+    ForestBackground();
+  ],
+has light;
+
+!----------------------------------------
+! Gum tree
+!----------------------------------------
+Object "gum tree" room16
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'base' or 'old' or 'gum' or 'tree' or 'trunk')
+      count++;
+    return count;
+  ],
+  description "This is an old gum tree with large burrs on the trunk. There's a large hollow at the top of the trunk, where Ollie Owl has his house.",
+has scenery;
+
+!----------------------------------------
+! Large burrs
+!----------------------------------------
+Object "large burrs" room16
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'large' or 'burr' or 'burrs//p' or 'burl' or 'burls//p' or 'growth' or 'growths//p' or 'injury' or 'injuries//p' or 'trunk')
+      count++;
+    return count;
+  ],
+  description "The burrs are large growths on the tree trunk where the tree has been injured and tried to repair itself. This poor old tree has had a lot of injuries.",
+has scenery;
+
+!----------------------------------------
+! Ollie Owl's house
+!----------------------------------------
+Object "Ollie Owl's house" room16
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'ollie' or 'ollie^s' or 'owl' or 'owl^s' or 'house' or 'home')
+      count++;
+    return count;
+  ],
+  description "You can't see Ollie Owl's house from here, but you know that it's in a large hollow at the top of this old gum tree. You could easily climb up there, as you're a koala and koalas are good at climbing.",
+has proper scenery;
+
+!----------------------------------------
+! Large hollow
+!----------------------------------------
+Object "large hollow" room16
+with
+  name 'large' 'hollow',
+  description "That's where Ollie Owl lives.",
+has scenery;
+
+!----------------------------------------
+! Forest
+!----------------------------------------
+Object "forest" room16
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'forest' or 'trees//p' or 'bush' or 'bushes//p')
+      count++;
+    return count;
+  ],
+  description "This is the southern edge of the forest. You're surrounded by trees and bushes.",
+has scenery;
+
+!----------------------------------------
+! Bushland
+!----------------------------------------
+Object "bushland" room16
+with
+  name 'bushland',
+  article "the",
+  description "The open bushland is back to the south.",
+has scenery;
+
+!========================================
+! Room 17: Inside Ollie Owl's House
+!========================================
+Object room17 "Inside Ollie Owl's House"
+with
+  description "You're inside Ollie Owl's house. It's very confined for a fat koala like you. The only exit is down.",
+  d_to room16,
+  out_to room16,
+  before
+  [;
+    Exit:
+      <<Go FAKE_D_OBJ>>;
+    Hint:
+      if (ollie.state == 0)
+        "Try talking to Ollie.";
+      if (ollie.state == 1 && room19 hasnt visited)
+        "Try visting the dark forest.";
+      if (ollie.state == 1)
+        "Try talking to Ollie again.";
+      if (ollie.state == 2)
+        "Try finding Ollie's key in the dark forest.";
+      if (ollie.state == 3)
+        "Try talking to Ollie again.";
+    Listen:
+      if (noun == nothing)
+        "It's quiet in here, apart from Ollie's occasional hooting.";
+  ],
+has light;
+
+!----------------------------------------
+! Inside Ollie Owl's house
+!----------------------------------------
+Object "Ollie Owl's house" room17
+with
+  name 'ollie^s' 'owl^s' 'house',
+  description "It's quite dark, but I suppose that suits an owl.",
+has proper scenery;
+
+!----------------------------------------
+! Ollie Owl
+!----------------------------------------
+Object ollie "Ollie Owl" room17
+with
+  name 'ollie' 'owl' 'bird',
+  description
+  [;
+    print "Ollie is a very wise old owl with two large yellow eyes.";
+    if (self.state == 0)
+      print " Ollie looks upset. Maybe you should talk to him.";
+    "";
+  ],
+  life
+  [;
+    Give:
+      if (noun == key && closet has locked)
+        "~It's hard for me to unlock the closet myself, as I don't have any hands. As you're here, do you think you could unlock it for me?~";
+      if (noun == key && closet hasnt open)
+        "~It's hard for me to open the closet myself, as I don't have any hands. As you're here, do you think you could open it for me?~";
+      if (noun == key)
+      {
+        move key to ollie;
+        "~Thanks, Kenny.~";
+      }
+    Talk:
+      if (self.state == 0)
+      {
+        self.state = 1;
+        move flashlight to player;
+        "You ask Ollie what's wrong. He says, ~I lost the key to my closet when I was flying over the dark forest and I'm scared to go looking for it in case the bunyip catches me. Can you find it for me? Here, you'll need this.~ He gives you a flashlight.";
+      }
+      if (self.state == 1 && room19 hasnt visited)
+        "~Have you found my key yet?~";
+      if (self.state == 1 && key notin player)
+      {
+        self.state = 2;
+        move glasses to player;
+        "You tell Ollie that you've been to the dark forest, but you couldn't find the key. ~Here, try wearing these.~ He gives you his glasses.";
+      }
+      if (self.state == 2 && key notin player)
+        "~Have you found my key yet?~";
+      if (self.state == 2 && key in player && closet has locked)
+      {
+        self.state = 3;
+        "~I see that you've found the key. Could you unlock the closet and open it for me, as it's hard for me to do it without any hands?~";
+      }
+      if (self.state == 3 && closet has locked)
+        "~Can you unlock the closet for me?~";
+      if (self.state == 3 && closet hasnt open)
+        "~Can you open the closet for me?~";
+      "~Thanks for your help, Kenny. I'm now all set to get ready for the bushfire season.~";
+  ],
+  state 0,
+has animate proper;
+
+!----------------------------------------
+! Ollie's eyes
+!----------------------------------------
+Object "Ollie's eyes" room17
+with
+  name 'eye' 'eyes//p',
+  description "Ollie has two large yellow eyes that face straight ahead. As his eyes can't move within their sockets, he moves his whole head when he wants to talk to you. He can move his head 270 degrees, which you find quite disconcerting.",
+has scenery;
+
+!----------------------------------------
+! Shelves
+!----------------------------------------
+Object shelves "shelves" room17
+with
+  name 'shelf' 'shelves//p',
+  description
+  [;
+    print "They're really rough shelves made from old bits of wood. ";
+    <<Search self>>;
+  ],
+  before
+  [;
+    Receive:
+      if (noun.size > self.size)
+        print_ret (The)noun, " won't fit on the shelves.";
+  ],
+  size 3,
+has pluralname static supporter;
+
+!----------------------------------------
+! Books
+!----------------------------------------
+Object "books" shelves
+with
+  name 'book' 'books//p',
+  description "Ollie must like detective stories. They're all hoo-dunnits.",
+  before
+  [;
+    Read:
+      "You don't have time to solve hoo-dunnits. You need to do all the tasks on your checklist.";
+    Take:
+      "I don't think Ollie would appreciate you stealing his property.";
+  ],
+has pluralname static;
+
+!----------------------------------------
+! Records
+!----------------------------------------
+Object "records" shelves
+with
+  name 'record' 'records//p',
+  description "You don't know why Ollie has records, as you can't see any record player. The records include 'Nervous Night' by The Hooters, 'All the Young Dudes' by Mott the Hoople, 'The Hoo Sell Out', 'Hoo's Next', 'The Hoo by Numbers' and 'Hoo Are You', all by The Hoo.",
+  before
+  [;
+    Play:
+      "There's no record player to play them on.";
+    Take:
+      "I don't think Ollie would appreciate you stealing his property.";
+  ],
+has pluralname static;
+
+!----------------------------------------
+! Closet
+!----------------------------------------
+Object closet "closet" room17
+with
+  name 'closet',
+  description
+  [;
+    print "It's a closet. ";
+    <<Search self>>;
+  ],
+  invent
+  [;
+    if (inventory_stage == 2)
+      rtrue;
+  ],
+  before
+  [;
+    Close:
+      if (self has open)
+        "If you close the closet, Ollie won't be able to get ready for the bushfire season.";
+    Receive:
+      if (noun.size > self.size)
+        print_ret (The)noun, " won't fit in the closet.";
+  ],
+  after
+  [;
+    Open:
+      ollie.state = 4;
+      Achieved(2);
+      "Ollie says, ~Thank you. Now I can get ready for the bushfire season.~";
+  ],
+  size 4,
+  with_key key,
+has container lockable locked openable static;
+
+!----------------------------------------
+! Flashlight
+!----------------------------------------
+Object flashlight "flashlight"
+with
+  name 'flashlight' 'flash' 'light' 'torch',
+  description
+  [;
+    print "It's a flashlight. It's currently ";
+    if (self has light)
+      "on.";
+    else
+      "off.";
+  ],
+  before
+  [;
+    SwitchOn:
+      if (self has light)
+        "It's already on.";
+      give self light;
+      print "You switch it on.";
+      if (location == thedark)
+        new_line;
+      "";
+    SwitchOff:
+      if (self hasnt light)
+        "It's already off.";
+      give self ~light;
+      "You switch it off.";
+  ],
+  size 2,
+has;
+
+!----------------------------------------
+! Glasses
+!----------------------------------------
+Object glasses "glasses"
+with
+  name 'glasses//p' 'spectacles//p' 'specs//p',
+  description "They're the wise old owl's spectacles. When you wear them, they give you a different perspective on things.",
+  after
+  [;
+    Disrobe:
+      if (key in room18 or room19)
+      {
+        give key concealed;
+        if (player in parent(key))
+          "You can't see the key any more.";
+      }
+    Wear:
+      if (key in room18 or room19)
+      {
+        give key ~concealed;
+        if (player in parent(key))
+          "You see something in the leaf litter.";
+      }
+      "Everything looks larger and sharper.";
+  ],
+  size 2,
+has clothing;
+
+!========================================
+! Room 18: Dark Forest
+!========================================
+Object room18 "Dark Forest"
+with
+  description "You're in the dark forest. It feels creepy. You can go deeper into the forest to the north, but if I was you, I'd head back to the south, where it's not so creepy.",
+  n_to room19,
+  s_to room16,
+  before
+  [;
+    Hint:
+      if (location == thedark && flashlight in nothing)
+        "Try visiting Ollie, the wise old owl. He seems to have a solution for everything.";
+      if (location == thedark && flashlight in player && flashlight hasnt light)
+        "Try turning on the flashlight.";
+      if (larry.state == 0)
+        "Try talking to Larry.";
+    Listen:
+      if (noun == nothing)
+        "It's unusually quiet in the forest, apart from Larry's incessant scratching in the leaf litter.";
+    Smell:
+      if (noun == nothing)
+        "There are smells of decaying vegetation coming from the leaf litter.";
+  ],
+  each_turn
+  [;
+    DarkForestBackground();
+  ],
+has;
+
+!----------------------------------------
+! Forest
+!----------------------------------------
+Object "forest"
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'dark' or 'old-growth' or 'old' or 'growth' or 'forest' or 'tree' or 'trees//p' or 'bush' or 'bushes//p')
+      count++;
+    return count;
+  ],
+  article "the",
+  description "This is a dark, old-growth forest. It's surrounded by old trees and the ground is covered in leaf litter. You don't like being here, as you might get eaten by a bunyip.",
+  found_in room18 room19,
+has scenery;
+
+!----------------------------------------
+! Leaf litter
+!----------------------------------------
+Object "leaf litter"
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'dead' or 'leaf' or 'leaves//p' or 'litter' or 'rotting' or 'vegetation')
+      count++;
+    return count;
+  ],
+  article "some",
+  description "It's a deep carpet of dead leaves and rotting vegetation.",
+  found_in room18 room19,
+has scenery;
+
+!----------------------------------------
+! Bunyip
+!----------------------------------------
+Object "bunyip"
+with
+  name 'bunyip',
+  description "You can't see the bunyip at the moment...and you don't want to. The other animals say that if you see the bunyip, then it's already too late, as you'll be food for the bunyip.",
+  found_in room18 room19,
+has scenery;
+
+!----------------------------------------
+! Larry Lyrebird
+!----------------------------------------
+Object larry "Larry Lyrebird" room18
+with
+  name 'larry' 'lyrebird' 'ground-dwelling' 'bird',
+  description "Larry is a large, ground-dwelling bird with dull-coloured plumage, but when he's alarmed or trying to attract a mate, he fans his tail in a glorious display of green and blue iridescent feathers.",
+  life
+  [;
+    Talk:
+      if (self.state == 0)
+      {
+        self.state = 1;
+        "~Hello, Kenny. I don't see you up here very often.~ You tell him that you don't want to get eaten by the bunyip. Larry just laughs.";
+      }
+      if (self.state == 1 && room19 hasnt visited)
+      {
+        self.state = 2;
+        "You ask Larry if he's seen Ollie's key. ~I saw something shiny in the leaf litter north of here, but it might be hard to find it again in the dark of the forest.~";
+      }
+      if (self.state == 2 && key in nothing)
+      {
+        self.state = 3;
+        "Larry asks, ~Have you found Ollie's key yet?~ You tell him that you haven't. Larry responds, ~Why don't you go back and talk to Ollie again. He's very wise, so he may be able to offer a solution.~";
+      }
+      "~Sorry, Kenny. I can't waste any more time talking, I need to find some tucker.~";
+  ],
+  state 0,
+has animate;
+
+!----------------------------------------
+! Larry's plumage
+!----------------------------------------
+Object "Larry's plumage" room18
+with
+  name 'plumage',
+  description "Larry's plumage is a dull brown colour that blends into the forest floor, so that he's very well camouflaged.",
+has scenery;
+
+!----------------------------------------
+! Larry's tail feathers
+!----------------------------------------
+Object "Larry's tail feathers" room18
+with
+  name 'tail' 'feather' 'feathers//p',
+  description "Larry's two outermost tail feathers are shaped like a lyre. The others are pale grey and shaped like fishbones. You wish that he'd fan out his tail and display his beautiful green and blue iridescent feathers, but he's not likely to do that unless you're a female lyrebird, which you're not.",
+has scenery;
+
+!========================================
+! Room 19: Dark Forest
+!========================================
+Object room19 "Dark Forest"
+with
+  description
+  [;
+    print "You're deep in the dark forest. The tangle of trees and bushes are too thick to go any further. The only way out is to the south.";
+    if (glasses notin player || glasses hasnt worn)
+      print " You have a funny feeling about this place. Maybe you should go and ask the wise owl for some help.";
+    "";
+  ],
+  s_to room18,
+  before
+  [;
+    Hint:
+      if (key in nothing)
+        "Try visiting Ollie, the wise old owl.";
+    Listen:
+      if (noun == nothing)
+        "It's unusually quiet in the forest.";
+    Smell:
+      if (noun == nothing)
+        "There are smells of decaying vegetation coming from the leaf litter.";
+  ],
+  each_turn
+  [;
+    DarkForestBackground();
+  ],
+has;
+
+!----------------------------------------
+! Key to closet
+!----------------------------------------
+Object key "key" room19
+with
+  name 'key',
+  description "It's probably the key to Ollie's closet.",
+  before
+  [;
+    Take:
+      if (self has concealed)
+        "You can't see any such thing.";
+  ],
+  after
+  [;
+    Drop:
+      if (location == room18 or room19 && glasses hasnt worn)
+        give self concealed;
+  ],
+  size 1,
+has concealed;
+
+!========================================
+! Room 20: Eastern Trail
+!========================================
+Object room20 "Eastern Trail"
+with
+  name 'eastern' 'trail',
+  description "The trail continues to the east and west and a steep bank goes down to the south. You can hear running water.",
+  s_to
+  [;
+    if (joey in player)
+      "You can't carry Joey down the steep slope or you'll slip over.";
+    else
+      return room24;
+  ],
+  e_to room21,
+  w_to room02,
+  d_to room24,
+  before
+  [;
+    Hint:
+      if (room24 hasnt visited)
+        "You should investigate the source of the running water.";
+    Listen:
+      "You hear the sound of running water coming from the south.";
+  ],
+  each_turn
+  [;
+    TrailBackground();
+  ],
+has light;
+
+!----------------------------------------
+! Eastern trail
+!----------------------------------------
+Object "eastern trail" room20
+with
+  name 'eastern' 'trail',
+  article "the",
+  description "It's a well-used trail that goes from east to west.",
+has scenery;
+
+!----------------------------------------
+! Steep bank
+!----------------------------------------
+Object "steep bank" room20
+with
+  name 'steep' 'bank',
+  description "You can easily go down the slope, but you might have trouble getting back up again.",
+has scenery;
+
+!========================================
+! Room 21: Eastern Trail
+!========================================
+Object room21 "Eastern Trail"
+with
+  description "The eastern trail ends at a rockface. Kelly Kangaroo's house is in a cave in the rockface to the north. You can follow the trail back to the west.",
+  n_to room22,
+  w_to room20,
+  in_to room22,
+  before
+  [;
+    Hint:
+      if (room22 hasnt visited)
+        "You should visit Kelly to check on her bushfire preparations.";
+      if (kelly.state == 0)
+        "You didn't talk to Kelly. You need to talk to her to check on her bushfire preparation plan.";
+      if (joey notin room22)
+        "You need to find Joey and return him to Kelly.";
+  ],
+  each_turn
+  [;
+    TrailBackground();
+  ],
+has light;
+
+!----------------------------------------
+! Eastern trail
+!----------------------------------------
+Object "eastern trail" room21
+with
+  name 'eastern' 'trail',
+  article "the",
+  description "It's a well-used trail coming from the west. It ends at the rockface where Kelly's house is located.",
+has scenery;
+
+!----------------------------------------
+! Kelly Kangaroo's house
+!----------------------------------------
+Object "Kelly Kangaroo's house"
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'kelly^s' or 'kangaroo^s' or 'house' or 'home' or 'small' or 'cave' or 'rockface')
+      count++;
+    return count;
+  ],
+  description "It's a small cave in the rockface with a high roof so that Kelly can jump around inside.",
+  before
+  [;
+    Enter:
+      if (self in room21)
+        <<Go FAKE_N_OBJ>>;
+  ],
+  found_in room21 room22,
+has proper scenery;
+
+!========================================
+! Room 22: Inside Kelly Kangaroo's House
+!========================================
+Object room22 "Inside Kelly Kangaroo's House"
+with
+  description "You're inside a small cave made for two. It's quite cool inside and is well protected from any bushfires. The exit is to the south.",
+  s_to room21,
+  out_to room21,
+  before
+  [;
+    Hint:
+      if (kelly.state == 0)
+        "Try talking to Kelly.";
+      if (kelly.state == 1 && joey in player)
+        "Drop Joey here.";
+      if (kelly.state == 1 && joey notin self)
+        "Find Joey.";
+    Listen:
+      if (noun == nothing)
+        "It's quiet in here, apart from Kelly's occasional shuffling about.";
+    Smell:
+      if (noun == nothing)
+        "It smells like musty old carpet in here.";
+  ],
+has light;
+
+!----------------------------------------
+! Kelly Kangaroo
+!----------------------------------------
+Object kelly "Kelly Kangaroo" room22
+with
+  name 'kelly' 'kangaroo',
+  description
+  [;
+    if (joey notin location)
+      "Kelly is jumping around. She looks worried. Maybe you should talk to her to see what's wrong.";
+    "Kelly looks happy now that Joey has been returned to her.";
+  ],
+  life
+  [;
+    Give:
+      if (noun == joey)
+        <<Drop joey>>;
+      if (joey notin location)
+        "Kelly sheds a tear. (You didn't know that kangaroos could cry.) ~I only want my Joey.~";
+      "Kelly ignores you. She's busy playing with Joey.";
+    Show:
+      if (noun == joey)
+        "Kelly gives a big smile. ~Joey! Why did you run away when the bushfire season is so close? Can you give him to me or leave him here please, Kenny?~";
+    Talk:
+      if (self.state == 0)
+      {
+        self.state = 1;
+        move joey to room04;
+        StartDaemon(joey);
+        "You ask Kelly what's wrong. She says, ~Joey has jumped away. Please find him and bring him back before the bushfire season starts.~";
+      }
+      if (self.state == 1 && joey notin player)
+        "~Have you found Joey yet?~";
+      if (joey in player)
+        "Kelly sees that you've found Joey. ~Oh, you found him. Thank you Kenny. Please leave him here.~";
+      "Kelly is too busy to talk any more. She's playing with Joey.";
+  ],
+  state 0,
+has animate female proper;
+
+!----------------------------------------
+! Joey the joey
+!----------------------------------------
+Object joey "Joey the joey"
+with
+  name 'joey',
+  description "It's Kelly Kangaroo's little joey.",
+  before
+  [;
+    Take:
+      if (self in room22)
+        "I think it best that you leave Joey here now that he's back home.";
+  ],
+  after
+  [;
+    Drop:
+      if (location == room22)
+      {
+        Achieved(3);
+        StopDaemon(self);
+        "Joey is reunited with his mother. Kelly gives him a big hug and gives you a big kiss. ~Thank you, Kenny.~";
+      }
+      StartDaemon(self);
+    Take:
+      StopDaemon(self);
+      "Joey jumps into your arms.";
+  ],
+  each_turn
+  [;
+    if (self in player)
+      "^Joey is fidgety.";
+  ],
+  daemon
+  [ direction source destination;
+    source = parent(self);
+    direction = random(4);
+    destination = source.(direction_properties_array -> direction);
+    if (destination ofclass Object && destination hasnt door)
+    {
+      move self to destination;
+      if (source == location)
+        "^Joey jumps away to the ", (string)direction_name_array-->direction,".";
+      if (destination == location)
+      {
+        !Flip direction
+        if (direction % 2)
+          !direction is odd
+          direction++;
+        else
+          !direction is even
+          direction--;
+        "^Joey jumps in from the ", (string)direction_name_array-->direction,".";
+      }
+      return;
+    }
+    if (self in location)
+      "^Joey jumps up and down.";
+  ],
+  size 7,
+has animate proper;
+
+!========================================
+! Room 23: Tree Above Your House
+!========================================
+Object room23 "Tree Above Your House"
+with
+  description "You're in the branches of the gum tree above your house. The only exit is down.",
+  d_to room02,
+  before
+  [;
+    Hint:
+      if (leaves hasnt moved)
+        "Take the gum leaves and store them in your cupboard for the bushfire season.";
+      if (jar in player && honey notin jar)
+        "Get the honey or put it in the jar.";
+      if (jar notin player && honey notin jar)
+        "You can take the honey if you've got a container to put it in.";
+    Listen:
+      "The buzzing of the bees is quite loud here.";
+    Smell:
+      if (noun == nothing)
+        "You can smell eucalyptus oil (yum) and honey (yuck).";
+  ],
+  after
+  [;
+    Drop:
+      move noun to room02;
+      print (The)noun;
+      if (noun has pluralname)
+        print " fall";
+      else
+        print " falls";
+      " to the ground below.";
+  ],
+has light;
+
+!----------------------------------------
+! Branches
+!----------------------------------------
+Object "branches" room23
+with
+  name 'branch' 'branches//p',
+  description
+  [;
+    print "The branches of the gum tree are full of yummy gum leaves. ";
+    if (leaves has moved)
+      print "You've already taken a big bunch";
+    else
+      print "Why don't you take some";
+    " to store away in case there's a bushfire.";
+  ],
+has scenery;
+
+!----------------------------------------
+! Bees
+!----------------------------------------
+Object bees "bees" room23
+with
+  name 'bee' 'bees//p',
+  description "They're buzzing around the nest.",
+  before
+  [;
+    Take:
+      "Don't be silly. The bees will sting you.";
+  ],
+has pluralname static;
+
+!----------------------------------------
+! Bees' nest
+!----------------------------------------
+Object nest "bees' nest" room23
+with
+  name 'bees^' 'nest',
+  description "It's full of sticky honey.",
+  invent
+  [;
+    if (inventory_stage == 2)
+      rtrue;
+  ],
+  before
+  [;
+    Take:
+      "As you move towards the nest, the bees get agitated. You decide to leave it alone, as you only need the honey.";
+  ],
+has container open static;
+
+!----------------------------------------
+! Honey
+!----------------------------------------
+Object honey "honey" nest
+with
+  name 'honey',
+  article "some",
+  description
+  [;
+    if (honey in jar && termites in jar)
+      "It's full of termites.";
+    else
+      "It's sweet, sticky honey.";
+  ],
+  before
+  [;
+    Eat:
+      "Yuck. You don't like honey. You only like gum leaves.";
+    Give:
+      if (self in jar && second ~= nothing)
+        <<give jar second>>;
+    Take:
+      if (self in jar)
+        "You can't take the honey out of the jar or it will dribble all over the place.";
+      if (jar notin player)
+        "You need something to put it in.";
+      move self to jar;
+      "You scoop the honey into the jar.";
+  ],
+  size 3,
+has edible;
+
+!----------------------------------------
+! Gum leaves
+!----------------------------------------
+Object leaves "gum leaves" room23
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'eucalyptus' or 'gum' or 'leaf' or 'leaves//p' or 'food')
+      count++;
+    return count;
+  ],
+  description "Lots of yummy gum leaves, your favourite food.",
+  after
+  [;
+    Take:
+      if (self hasnt moved)
+      {
+        print "You grab a big armful of gum leaves. This should be enough to last you during a bushfire.^";
+        ShowTutorial(TUT_TAKE_LEAVES);
+        rtrue;
+      }
+  ],
+  size 6,
+has pluralname;
+
+!========================================
+! Room 24: Creek
+!========================================
+Object room24 "Creek"
+with
+  description "You're on the muddy bank of the creek. You can't go any further. You can only return up the bank to the north.",
+  n_to
+  [;
+    if (rock in player && children(player) > 1)
+      "The rock is heavy. You need both hands to push it up the slippery river bank. You'll have to drop anything else that you're carrying.";
+    return room20;
+  ],
+  u_to
+  [;
+    <<Go FAKE_N_OBJ>>;
+  ],
+  before
+  [;
+    Hint:
+      if (pete.state == 0)
+        "Try talking to Pete.";
+      if (joke.number == 0)
+        "Try asking Pete for a joke.";
+      if (joke.number == 1)
+        "Pete knows lots of jokes. Try asking him for another one.";
+      if (rock in nothing)
+        "Try examining the creek.";
+    Listen:
+      if (noun == nothing)
+        "You find the babbling of the running water in the creek to be quite soothing.";
+    Smell:
+      if (noun == nothing)
+        "Everything smells fresh and clean by the creek.";
+  ],
+  each_turn
+  [;
+    if (action == ##Help or ##Hint)
+      return;
+    if (random(5) == 1)
+      switch(random(5))
+      {
+        1: "^A red-bellied black snake slithers past and disappears into the ferns.";
+        2: "^A frog jumps into the creek.";
+        3: "^Pete sees a tadpole and scoops it up into his bill.";
+        4: "^A water dragon sticks its head out of the water, then swims off.";
+        5: "^You hear something splashing in the creek, but you don't see what it is.";
+      }
+  ],
+has light;
+
+!----------------------------------------
+! Creek
+!----------------------------------------
+Object "creek" room24
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'creek' or 'brook' or 'stream' or 'river' or 'water')
+      count++;
+    return count;
+  ],
+  description
+  [;
+    print "The creek runs from east to west behind your house, but you can't travel in those directions, because it is too rough and rocky and tangled by overhanging ferns.";
+    if (rock in nothing)
+    {
+      move rock to location;
+      print " You find a big rock in the creek.";
+    }
+    "";
+  ],
+has scenery;
+
+!----------------------------------------
+! Muddy bank
+!----------------------------------------
+Object "muddy bank" room24
+with
+  name 'muddy' 'bank',
+  description " The bank of the creek is quite steep and slippery.",
+has scenery;
+
+!----------------------------------------
+! Ferns
+!----------------------------------------
+Object "ferns" room24
+with
+  name 'fern' 'ferns//p' 'bracken',
+  description "They are mainly bracken ferns and other things that you don't recognise. You're not really interested in ferns, as you can't eat them. You only like gum leaves.",
+has pluralname scenery;
+
+!----------------------------------------
+! Pete Platypus
+!----------------------------------------
+Object pete "Pete Platypus" room24
+with
+  name 'pete' 'peter' 'platypus',
+  description
+  [;
+    print "This is Pete Platypus. He has silky brown fur, a strong bill, webbed feet and a flat tail. He's very shy and normally only comes out at night time. ";
+    if (joke.number == 0)
+      "Why don't you talk to him?";
+    if (joke.number < MAX_JOKES)
+      "Why don't you ask him for another joke?";
+    "He's searching the creek for waterbugs, insect larvae, tadpoles, worms, snails or anything else that's tasty to a platypus.";
+  ],
+  before
+  [;
+    AskFor:
+      if (second == joke)
+      {
+        if (joke.number == MAX_JOKES)
+          "~Sorry, Kenny. I've run out of jokes.~";
+        switch (jokes->joke.number++)
+        {
+          0: print "~Q: Percy Python walked into a bar.^A: The bartender says, 'How did you do that?'~^";
+          1: print "~Q: What do you call a lazy Joey?^A: A pouch potato.~^";
+          2: print "~Q: Where does Kenny Koala go for holidays?^A: Koala Lumpur.~^";
+          3: print "~Q: What's Kelly Kangaroo's favourite music?^A: Hip-hop.~^";
+          4: print "~Q: Which Australian animal can jump higher than a gum tree?^A: All of them, because a gum tree can't jump.~^";
+          5: print "~Q: Why did Wally Wombat cross the road?^A: To see his flat mate.~^";
+          6: print "~Q: Why is Dave Dingo good at public speeches?^A: He knows when to take a paws.~^";
+          7: print "~Q: What do you get when you cross a kangaroo with a sheep?^A: A woolly jumper.~^";
+          8: print "~Q: What did Kenny Koala do after raking the leaves?^A: He fell out of the tree.~^";
+          9: print "~Q: Why is Australia such a dry country?^A: We don't have a king or queen to reign over it.~^";
+          10: print "~Q: Did you hear that Joey the joey was complaining that he was cold?^A: Kelly Kangaroo told him to go and stand in a corner, because it was 90 degrees there.~^";
+          11: print "~Q: What do you call a boomerang that won't come back?^A: A stick.~^";
+          12: print "~Q: Why did Emily Emu cross the road?^A: To prove she wasn't a chicken.~^";
+          13: print "~Q: What did Ollie Owl say when he heard that Eddie Echidna was getting married?^A: 'To hoo?'~^";
+          14: print "~Q: Why does Terry Taipan always measure things in metres?^A: Because he has no feet.~^";
+          15: print "~Q: What do you call a spider with 10 eyes?^A: A spiiiiiiiiiider.~^";
+          16: print "~Q: What do they call a wallaby in Africa?^A: Lost.~^";
+          17: print "~Q: What's Kelly Kangaroo's favourite clothing?^A: A jump suit.~^";
+          18: print "~Q: Which snakes are the best mathematicians?^A: Death adders.~^";
+          19: print "~Q: What do you call Ollie Owl when he's dressed in armour?^A: A knight owl.~^";
+        }
+        ShowTutorial(TUT_ASK_FOR_JOKE);
+        rtrue;
+      }
+  ],
+  life
+  [;
+    Ask:
+      if (second == 'joke' or 'riddle' or 'laugh')
+        <<AskFor self joke>>;
+    Talk:
+      if (joke.number == 0)
+      {
+        self.state = 1;
+        "~Hello Kenny. Would you like to hear a joke? Go on, ask me for a joke.~";
+      }
+      if (joke.number < MAX_JOKES)
+        "~Would you like to hear another joke? I've got plenty of them.~";
+      "~Sorry Kenny. No more time for joking around. I have to find my dinner.~";
+  ],
+  state 0,
+has animate proper;
+
+!----------------------------------------
+! Pete's fur
+!----------------------------------------
+Object "Pete's fur" room24
+with
+  name 'silky' 'brown' 'fur',
+  article "some",
+  description "Pete's dense, silky brown fur is waterproof and insulating. It keeps him warm when he's underwater.",
+has scenery;
+
+!----------------------------------------
+! Pete's bill
+!----------------------------------------
+Object "Pete's bill" room24
+with
+  parse_name
+  [ count;
+    count = 0;
+    while (NextWord() == 'strong' or 'shovel-shaped' or 'shovel' or 'shaped' or 'bill')
+      count++;
+    return count;
+  ],
+  description "Pete's shovel-shaped bill is flexible and rubbery and feels like suede. He uses it for digging little creatures from the creek bed.",
+has scenery;
+
+!----------------------------------------
+! Pete's webbed feet
+!----------------------------------------
+Object "Pete's webbed feet" room24
+with
+  name 'webbed' 'feet',
+  description "Pete uses his feet for swimming and digging burrows along the river bank.",
+has pluralname scenery;
+
+!----------------------------------------
+! Pete's tail
+!----------------------------------------
+Object "Pete's tail" room24
+with
+  name 'tail',
+  description "Pete uses his tail to steer through the water when he's swimming.",
+has scenery;
+
+!----------------------------------------
+! Joke (dummy object)
+!----------------------------------------
+Object joke "joke" room24
+with
+  name 'joke' 'riddle' 'laugh',
+  description "That's not something you can see.",
+  number 0,
+has scenery;
+
+!----------------------------------------
+! Heavy rock
+!----------------------------------------
+Object rock "heavy rock"
+with
+  name 'big' 'heavy' 'rock',
+  description "It's the big rock that you found in the creek.",
+  before
+  [;
+    Climb, Enter, Go:
+      if (self in player)
+        "You can't very well climb onto the rock while you're carrying it.";
+      "It's a big rock, but not big enough to climb on.";
+    ThrowAt:
+      "The rock is too heavy for you to throw, but you could probably break something with it when you're holding it.";
+  ],
+  after
+  [;
+    Take:
+      "Oof, it's heavy.";
+  ],
+  size 5,
+has;
+
+!========================================
+! Print rules
+!========================================
+[ consultWord word i;
+  for (i=0:i<WordLength(word):i++)
+    print (char)LowerCase(WordAddress(word)->i);
+];
+
+[ DoesntOrDont obj;
+  if (obj has pluralname)
+    print "don't";
+  else
+    print "doesn't";
+];
+
+[ firstConsultWord word i;
+  for (i=0:i<WordLength(word):i++)
+    if (i == 0)
+      print (char)UpperCase(WordAddress(word)->i);
+    else
+      print (char)LowerCase(WordAddress(word)->i);
+];
+
+[ italic text;
+#Ifv5;
+  style underline;
+#Endif;
+  print (string)text;
+#Ifv5;
+  style roman;
+#Endif;
+];
+
+!========================================
+! Other routines
+!========================================
+[ BushBackground;
+  if (action == ##Help or ##Hint)
+    return;
+  if (random(5) == 1)
+    switch(random(6))
+    {
+      1: "^A magpie flies overhead.";
+      2: "^A goanna runs past. He's always in a hurry and never stops to talk.";
+      3: "^You hear a kookaburra laughing in the distance.";
+      4: "^A flock of sulphur-crested cockatoos fly overhead, squawking as they go.";
+      5: "^A wallaby bounces past and disappears into the bush.";
+      6: "^A blue-tongued lizard appears out of nowhere, flicks out his blue tongue, then skitters off back into the bush.";
+    }
+];
+
+[ DarkForestBackground;
+  if (action == ##Help or ##Hint)
+    return;
+  if (random(5) == 1)
+    switch(random(2))
+    {
+      1: "^You hear something rustling in the leaf litter.";
+      2: "^You hear the sweet tinkling sound of bellbirds nearby.";
+    }
+];
+
+[ ForestBackground;
+  if (action == ##Help or ##Hint)
+    return;
+  if (random(5) == 1)
+    switch(random(3))
+    {
+      1: "^The wind rustles the leaves overhead.";
+      2: "^A wedge-tailed eagle circles overhead.";
+      3: "^You hear the distinctive song of a currawong nearby.";
+    }
+];
+
+[ TrailBackground;
+  if (action == ##Help or ##Hint)
+    return;
+  if (random(5) == 1)
+    switch(random(3))
+    {
+      1: "^A Cunningham's skink runs across the trail.";
+      2: "^A copper-tailed skink runs along the trail and out of sight.";
+      3: "^You hear a rustling sound nearby.";
+    }
+];
+
+[ LowerCase c; ! for ZSCII matching ISO 8859-1
+  switch (c)
+  {
+    'A' to 'Z': c = c + 32;
+    202, 204, 212, 214, 221: c--;
+    217, 218: c = c - 2;
+    158 to 160, 167, 168, 208 to 210: c = c - 3;
+    186 to 190, 196 to 200: c = c - 5 ;
+    175 to 180: c = c - 6;
+  }
+  return c;
+];
+
+[ PlayerDescription;
+  tutorial_used->TUT_AUTO1 = 1;
+  "You're Kenny Koala. You're a koala, not a bear. A koala is a marsupial. A bear is a mammal. You hate it when people call you a koala bear.";
+];
+
+[ ShowTutorial i;
+  if (tutorial && tutorial_used->i == 0)
+  {
+    tutorial_used->i = 1;
+    tutorial_shown = 1;
+    switch (i)
+    {
+      TUT_ENTER_START:
+        tutorial_shown = 0;
+        print_ret (italic)"^[The description above tells you where you are and what you can see. The '>' below is the prompt. You type commands after the prompt. When the location description scrolls off the screen, you can refresh it by typing LOOK (or L). Try it now. Type L after the prompt.]";
+      TUT_AUTO1:
+        print_ret (italic)"^[When you start a new game, it's a good idea to EXAMINE or LOOK AT yourself. EXAMINE can be abbreviated to X. Type X ME.]";
+      TUT_AUTO2:
+        if (tutorial_used->TUT_INVENTORY == 0)
+          print_ret (italic)"^[When you start a new game, it's a good idea to take an inventory to see if you're carrying anything. Type INVENTORY (or I).]";
+      TUT_AUTO3:
+        print_ret (italic)"^[You should identify all the things mentioned in the description and EXAMINE them one at a time, e.g. X HOUSE, X DOOR and X CUPBOARD. These may provide more detail or important clues. If you'd rather leave, you can now do so.]";
+      TUT_INVENTORY:
+        print_ret (italic)"^[You can take a closer look at anything you're carrying using EXAMINE (or X). Type X NOTE.]";
+      TUT_EXAMINE_NOTE:
+        print_ret (italic)"^[A response will sometimes hint at something you should do. In this case, type READ NOTE.]";
+      TUT_READ_NOTE:
+        print_ret (italic)"^[Now you know what you need to do. Type DROP NOTE to drop it.]";
+      TUT_DROP_NOTE:
+        print_ret (italic)"^[Discarding the note is probably not a good idea, as you may need to refer to it later. You can pick it up again using GET or TAKE. Try it now. Type GET NOTE.]";
+      TUT_CANT_GO:
+        print_ret (italic)"^[The only way to leave your house is via the front door. Type ENTER DOOR.]";
+      TUT_EXAMINE_DOOR:
+        print_ret (italic)"^[If the door is closed and you want to open it, type OPEN DOOR.]";
+      TUT_OPEN_DOOR:
+        print_ret (italic)"^[Now that the door is open, you can leave your house. Type EXIT, OUT, ENTER DOOR or N to leave.]";
+      TUT_ENTER_ROOM02:
+        print_ret (italic)"^[It's time to explore the bushland. You can move around using compass directions such as GO NORTH (or NORTH), as well as UP and DOWN. Directions can be abbreviated to N, S, E, W, U and D.]";
+      TUT_LEAVE_ROOM02:
+        print_ret (italic)"^[Before you go wandering off, you should investigate the source of that buzzing. Type CLIMB TREE (or U) to climb the tree. If you're not interested in the buzzing, you're now free to wander off somewhere else.]";
+      TUT_ENTER_ROOM23:
+        print_ret (italic)"^[Ooh, yummy gum leaves. You need a good supply of these in case there's a bushfire, so type GET LEAVES.]";
+      TUT_TAKE_LEAVES:
+        print_ret (italic)"^[Now that you have a good supply of gum leaves, type CLIMB TREE (or D) to climb back down the tree.]";
+      TUT_ENTER_ROOM02_WITH_LEAVES:
+        print_ret (italic)"^[Now type ENTER DOOR or IN or S to take the gum leaves to your house.]";
+      TUT_ENTER_ROOM01_CLOSED_CUPBOARD:
+        print_ret (italic)"^[You can now type OPEN CUPBOARD and PUT LEAVES IN CUPBOARD.]";
+      TUT_ENTER_ROOM01_OPEN_CUPBOARD:
+        print_ret (italic)"^[You can now PUT LEAVES IN CUPBOARD.]";
+      TUT_PUT_LEAVES_IN_CUPBOARD:
+        print_ret (italic)"^[Congratulations. You've completed the first task on your checklist. Now see if you can complete the rest by yourself.]";
+      TUT_ENTER_ROOM03:
+        print_ret (italic)"^[When you meet another animal, type TALK TO <animal>. You can sometimes get further information from them by typing ASK <animal> ABOUT <topic> or give them information by typing TELL <animal> ABOUT <topic>.]";
+      TUT_ENTER_ROOM04:
+        print_ret (italic)"^[You're on your own now. Type HELP for a quick reminder of the main commands or HINT if you get stuck. The tutorial will continue to offer occasional suggestions.]";
+      TUT_EXAMINE_CUPBOARD:
+        print_ret (italic)"^[If the cupboard is closed and you want to open it, type OPEN CUPBOARD.]";
+      TUT_OPEN_CUPBOARD:
+        print_ret (italic)"^[If you have enough room in your inventory, you can take multiple objects out of a container at the same time. Type GET ALL FROM CUPBOARD.]";
+      TUT_ENTER_DARK:
+        print_ret (italic)"^[When it's too dark to see, you'll need to find a light source. Have you found anything like that?]";
+      TUT_INVENTORY_FULL:
+        print_ret (italic)"^[You can only carry five objects, not counting worn objects or objects in containers. Try dropping objects that you no longer need.]";
+      TUT_ASK_FOR_JOKE:
+        print_ret (italic)"^[You can repeat the previous command using AGAIN (or G). Try it now. If you'd like to hear another joke, type G.]";
+    }
+  }
+  rtrue;
+];
+
+[ UpperCase c; ! for ZSCII matching ISO 8859-1
+  switch (c)
+  {
+    'a' to 'z': c = c - 32;
+    201, 203, 211, 213, 220: c++;
+    215, 216: c = c + 2;
+    155 to 157, 164, 165, 205 to 207: c = c + 3;
+    181 to 185, 191 to 195: c = c + 5 ;
+    169 to 174: c = c + 6;
+  }
+  return c;
+];
+
+!========================================
+! Grammar
+!========================================
+Extend only 'ask' first
+  * 'about'/'for'/'to' topic -> AskAbout
+  * creature -> VagueAsk
+  * creature 'for' topic -> Ask;
+
+Extend 'attack'
+  * noun 'with' held -> Attack;
+
+!Extend only 'break' 'crack' 'destroy' 'hit' 'smash' 'wreck' replace
+!  * noun -> Break
+!  * noun 'with' held -> Break;
+
+Extend 'climb' first
+  * 'up' -> Ascend
+  * 'up' noun -> Ascend
+  * 'down' -> Descend
+  * 'down' noun -> Descend
+  * 'out' 'of' noun -> Exit
+  * 'in'/'on'/'out'/'through' noun -> Enter;
+
+Extend 'enter'
+  * 'through' noun -> Enter;
+
+Extend only 'get' first
+  * 'out' -> Exit;
+
+Extend 'give' first
+  * noun 'to' creature -> Give
+  * 'over' noun 'to' creature -> Give
+  * creature noun -> Give reverse;
+
+Extend 'go'
+  * 'through' noun -> Enter;
+
+Extend 'jump'
+  * 'on' noun -> Enter
+  * 'from'/'out'/'through' noun -> Exit;
+
+Extend 'look'
+  * 'into' noun -> Search
+  * 'under' noun -> LookUnder;
+
+Extend only 'put'
+  * 'out' noun -> SwitchOff
+  * noun 'out' -> SwitchOff;
+
+Extend 'read' first
+  * noun -> Read;
+
+Extend 'say' first
+  * topic -> Say
+  * -> Say;
+
+Extend only 'shine' replace
+  * noun -> SwitchOn;
+
+Extend only 'speak' replace
+  * -> Talk
+  * creature -> Talk
+  * noun -> Talk
+  * 'to'/'with' creature -> Talk
+  * 'to'/'with' noun -> Talk
+  * 'to'/'with' creature 'about' topic -> Ask
+  * 'to'/'with' noun 'about' topic -> Ask;
+
+Extend 'tell'
+  * topic 'to' creature -> Tell reverse
+  * creature topic -> Tell
+  * creature -> VagueTell;
+
+Extend only 'unlock' first
+  * noun -> Unlock;
+
+Verb meta 'about' 'info'
+  * -> About;
+
+Verb 'ascend'
+  * noun -> Ascend;
+
+Verb 'count'
+  * noun -> Count;
+
+Verb meta 'credits'
+  * -> Credits;
+
+Verb 'descend'
+  * noun -> Descend;
+
+Verb 'extinguish' 'douse' 'unlight'
+  * noun -> SwitchOff
+  * noun 'with' held -> SwitchOff;
+
+Verb 'greet'
+  * creature -> Talk
+  * noun -> Talk;
+
+Verb 'how' 'what' 'where' 'when' 'why'
+  * topic -> Question;
+
+Verb 'help' 'instructions'
+  * -> Help;
+
+Verb 'hint' 'clue'
+  * -> Hint;
+
+Verb 'kick' 'knock' 'bang' 'rap' 'tap'
+  * noun -> Attack
+  * 'at'/'on' noun -> Attack;
+
+Verb 'lift' 'raise'
+  * noun -> Lift
+  * noun 'with' noun -> Lift;
+
+Verb 'play'
+  * noun -> Play;
+
+Verb 'talk' 'babble' 'chat' 'communicate' 'converse' 'gab' 'gossip'
+  * -> Talk
+  * creature -> Talk
+  * noun -> Talk
+  * 'to'/'with' creature -> Talk
+  * 'to'/'with' noun -> Talk
+  * 'to'/'with' creature 'about' topic -> Ask
+  * 'to'/'with' noun 'about' topic -> Ask;
+
+Verb meta 'tutorial'
+  * -> Tutorial
+  * 'on' -> TutorialOn
+  * 'off' -> TutorialOff;
+
+Verb 'use'
+  * -> Use
+  * noun -> Use;
+
+Verb 'xyzzy' 'plover' 'plugh' 'yoho'
+  * -> MagicWord;
+
+!========================================
+! Actions
+!========================================
+[ AboutSub;
+  print "This game was inspired by 'Winnie the Pooh's Adventure', which was written in Inform 6 by Brandon Hansen as an assignment for CIS 487/587 at the University of Michigan-Dearborn in Autumn 2002.^^In 2017, I rewrote it from scratch using Inform 6, fixed the bugs and spelling errors, and did a number of small changes.^^In 2022, I ported it to PunyInform, developed a story based around Australian animals (rather than the A. A. Milne characters of the original), added new animals, expanded the map and vocabulary, rewrote all the text, modified the existing puzzles and added new puzzles, added the tutorial mode and renamed it to 'Kenny Koala's Bushfire Survival Plan'. This was first published in the Text Adventure Literacy Jam 2022.^^";
+  <<Credits>>;
+];
+
+[ AscendSub;
+  <<Go FAKE_U_OBJ>>;
+];
+
+[ AskAboutSub obj;
+  objectloop (obj in location)
+    if (obj ~= player && obj has animate)
+      <<Ask obj noun>>;
+  "There's no one here to ", (address)verb_word, " anything.";
+];
+
+[ CountSub;
+  if (noun has pluralname)
+    "There's more than one.";
+  "There's only one.";
+];
+
+[ CreditsSub;
+  "Concept by Brandon Hansen.^Game design and coding by Garry Francis.^Play testing by Amanda Walker, Andrew Schultz, Dee Cooke, Nils Fagerburg and Tristin Grizel Dean.";
+];
+
+[ DescendSub;
+  <<Go FAKE_D_OBJ>>;
+];
+
+[ HelpSub;
+  print "Tell me what to do using simple commands starting with a verb.^^Use LOOK (or L) to refresh the location description. Identify all the objects in the description and EXAMINE (or X) each one. Read responses carefully for hints.^^Use compass directions (N, S, E, W, U and D) to move around. Draw a map as you go.^^Use GET or TAKE to take objects and DROP to drop them again. Use INVENTORY (or I) to see what you're carrying.^^Use AGAIN (or G) to repeat the last command.^^";
+#Ifv5;
+  print "Use UNDO to undo the last command if you make a mistake.^^";
+#Endif;
+  "Use SAVE to save the game and RESTORE to restore it again.^^There are over 100 verbs that you can use, so if something doesn't work, try a different verb or a different way of doing things. Use HINT if you get stuck.";
+];
+
+[ HintSub;
+  "Examine everything you find and draw a map.";
+];
+
+[ LiftSub;
+  if (noun has scenery or static)
+    "You can't lift that.";
+  if (noun in player)
+    "As you're already holding ", (ThatOrThose)noun, ", it's safe to presume that you've already lifted ", (ItOrThem)noun, ".";
+  "You lift up ", (the)noun, " but can't see anything interesting and put it down again.";
+];
+
+[ LockSub k;
+  if (ObjectIsUntouchable(noun))
+    return;
+  if (noun hasnt lockable)
+    "You can't lock ", (ThatOrThose)noun, ".";
+  if (noun has locked)
+    print_ret (The)noun, " is already locked.";
+  k = RunRoutines(noun, with_key);
+  if (second == nothing && k ~= nothing && k in player)
+  {
+    second = k;
+    print "(with ", (the)second, ")^";
+  }
+  if (noun has open)
+    "You'll have to close ", (the) noun, " first.";
+  if (second == nothing)
+    "You don't have the key.";
+  if (second ~= k)
+    print_ret (The)second, " ", (DoesntOrDont)second, " fit the lock.";
+  give noun locked;
+  if (AfterRoutines() || keep_silent)
+    return;
+  "You lock ", (the)noun, ".";
+];
+
+[ LookUnderSub;
+  if (location == thedark)
+    "But it's dark.";
+  "You find nothing of interest.";
+];
+
+[ MagicWordSub;
+  "Magic words don't work in the Carpathian Mountains.";
+];
+
+[ QuestionSub;
+  "Sorry, I can't answer questions. I can only carry out commands. Type HELP for a reminder of what to do.";
+];
+
+[ PlaySub;
+  if (ObjectIsUntouchable(noun))
+    return;
+  "You can't play ", (ThatOrThose)noun, ".";
+];
+
+[ ReadSub;
+  "There's nothing legible on ", (ThatOrThose)noun, ".";
+];
+
+[ SaySub i;
+  if (consult_words == 0)
+    "You have nothing to say.";
+  print "~";
+  i = consult_from;
+  print (firstConsultWord)i++;
+  while (i < consult_from + consult_words)
+    print " ", (consultWord)i++;
+  print ".~^^";
+  if (AfterRoutines())
+    return;
+  "Nothing happens.";
+];
+
+[ TalkSub;
+  if (noun == nothing)
+    "You start talking to no one in particular.";
+  if (noun == player)
+    "You start talking to yourself, but it's a one-sided conversation.";
+  if (RunLife(noun, ##Talk))
+    rtrue;
+  print_ret (The)noun, " ", (IsOrAre)noun, " not very talkative.";
+];
+
+[ TellToSub;
+  if (RunLife(noun, ##TellTo))
+    rtrue;
+  "Nothing happens.";
+];
+
+[ TutorialSub;
+  print "Tutorial mode is currently ";
+  if (tutorial)
+    "on.";
+  else
+    "off.";
+];
+
+[ TutorialOnSub;
+  if (tutorial)
+    "Tutorial mode is already on.";
+  tutorial = true;
+  "Tutorial mode is now on.";
+];
+
+[ TutorialOffSub;
+  if (~~tutorial)
+    "Tutorial mode is already off.";
+  tutorial = false;
+  "Tutorial mode is now off.";
+];
+
+[ UnlockSub k;
+  if (ObjectIsUntouchable(noun))
+    return;
+  if (noun hasnt lockable)
+    "You can't unlock ", (the)noun, ".";
+  if (noun hasnt locked)
+    print_ret (The)noun, " ", (IsOrAre)noun, " already unlocked.";
+  k = RunRoutines(noun, with_key);
+  if (second == nothing && k ~= nothing && k in player)
+  {
+    second = k;
+    print "(with ", (the)second, ")^";
+  }
+  if (second == nothing)
+    "You don't have the key.";
+  if (second ~= k)
+    print_ret (The)second, " ", (DoesntOrDont)second, " fit the lock.";
+  give noun ~locked;
+  if (AfterRoutines() || keep_silent)
+    return;
+  "You unlock ", (the)noun, ".";
+];
+
+[ UseSub;
+  "'Use' is a very vague concept. You'll have to be more explicit than that.";
+];
+
+[ VagueAskSub;
+  "You need to specify who to ask and what to ask about. For example, ASK <character> ABOUT <topic>.";
+];
+
+[ VagueTellSub;
+  "You need to specify who to tell and what to tell them about. For example, TELL <character> ABOUT <topic>, TELL <character> <topic> or TELL <topic> TO <character>, depending on which format makes sense in the circumstances.";
+];
+
+End;

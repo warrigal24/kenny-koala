@@ -1,0 +1,264 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<trizbort version="1.5.9.3">
+	<info>
+		<title>Kenny Koala's Bushfire Survival Plan</title>
+		<author>Garry Francis</author>
+	</info>
+	<map>
+		<room id="2" name="In the Bush" subtitle="" x="-400" y="-160" w="80" h="40" region="Carrot" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="1" cornerTopRight="1" cornerBottomLeft="1" cornerBottomRight="1" borderstyle="Solid" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw">Bush|Banksia|(Murnong)|(Native yams)</objects>
+		</room>
+		<room id="3" name="In the Bush" subtitle="" x="-280" y="-160" w="80" h="40" region="Carrot" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="1" cornerTopRight="1" cornerBottomLeft="1" cornerBottomRight="1" borderstyle="Solid" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw">Bush|Bottlebrush|(Murnong)|(Native yams)</objects>
+		</room>
+		<room id="4" name="In the Bush" subtitle="" x="-160" y="-160" w="80" h="40" region="Carrot" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="1" cornerTopRight="1" cornerBottomLeft="1" cornerBottomRight="1" borderstyle="Solid" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw">Bush|Grevillea|(Murnong)|(Native yams)</objects>
+		</room>
+		<room id="5" name="Dark Forest" subtitle="" x="-40" y="-160" w="80" h="40" region="Dark" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="1" cornerTopRight="1" cornerBottomLeft="1" cornerBottomRight="1" borderstyle="Solid" description="" roomFill="" secondFill="" secondFillLocation="BottomRight" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw">Forest|Leaf litter|Larry Lyrebird|Bunyip</objects>
+		</room>
+		<room id="6" name="In the Bush" subtitle="" x="-160" y="-80" w="80" h="40" region="Carrot" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="1" cornerTopRight="1" cornerBottomLeft="1" cornerBottomRight="1" borderstyle="Solid" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw">Bush|Grass tree|(Murnong)|(Native yams)</objects>
+		</room>
+		<room id="7" name="Outside Ollie's House" subtitle="" x="-40" y="-80" w="80" h="40" region="Normal" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="1" cornerTopRight="1" cornerBottomLeft="1" cornerBottomRight="1" borderstyle="Solid" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw">Gum tree|Large burrs|Ollie Owl's house|Large hollow|Forest|Bushland</objects>
+		</room>
+		<room id="10" name="Edge of Forest" subtitle="" x="-40" y="0" w="80" h="40" region="Normal" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="1" cornerTopRight="1" cornerBottomLeft="1" cornerBottomRight="1" borderstyle="Solid" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw">Edge of forest|Brown snake</objects>
+		</room>
+		<room id="11" name="Tree Above Kenny's" subtitle="" x="80" y="0" w="80" h="40" region="Normal" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="1" cornerTopRight="1" cornerBottomLeft="1" cornerBottomRight="1" borderstyle="Solid" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw">Bees|Bees' nest|Honey|Gum leaves</objects>
+		</room>
+		<room id="12" name="Inside Kelly's House" subtitle="" x="200" y="0" w="80" h="40" region="Normal" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="1" cornerTopRight="1" cornerBottomLeft="1" cornerBottomRight="1" borderstyle="Solid" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw">Kelly Kangaroo's house|Kelly Kangaroo</objects>
+		</room>
+		<room id="14" name="Eastern Trail" subtitle="" x="80" y="80" w="80" h="40" region="Normal" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="1" cornerTopRight="1" cornerBottomLeft="1" cornerBottomRight="1" borderstyle="Solid" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw">Eastern trail</objects>
+		</room>
+		<room id="15" name="Eastern Trail" subtitle="" x="200" y="80" w="80" h="40" region="Normal" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="1" cornerTopRight="1" cornerBottomLeft="1" cornerBottomRight="1" borderstyle="Solid" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw">Eastern trail|Kelly Kangaroo's house</objects>
+		</room>
+		<line id="27">
+			<dock index="0" id="2" port="e" />
+			<dock index="1" id="3" port="w" />
+		</line>
+		<line id="28">
+			<dock index="0" id="3" port="e" />
+			<dock index="1" id="4" port="w" />
+		</line>
+		<line id="29">
+			<dock index="0" id="4" port="s" />
+			<dock index="1" id="6" port="n" />
+		</line>
+		<line id="31">
+			<dock index="0" id="5" port="s" />
+			<dock index="1" id="7" port="n" />
+		</line>
+		<line id="32" style="dashed">
+			<dock index="0" id="7" port="s" />
+			<dock index="1" id="10" port="n" />
+		</line>
+		<line id="46">
+			<dock index="0" id="12" port="s" />
+			<dock index="1" id="15" port="n" />
+		</line>
+		<line id="47">
+			<dock index="0" id="14" port="e" />
+			<dock index="1" id="15" port="w" />
+		</line>
+		<room id="92" name="Kenny Koala's Bushfire Survival Plan (Garry Francis)" subtitle="" x="-280" y="-280" w="320" h="40" region="NoRegion" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="1" cornerTopRight="1" cornerBottomLeft="1" cornerBottomRight="1" borderstyle="None" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw" />
+		</room>
+		<room id="39" name="Dark Forest" subtitle="" x="-40" y="-240" w="80" h="40" region="Dark" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="1" cornerTopRight="1" cornerBottomLeft="1" cornerBottomRight="1" borderstyle="Solid" description="" roomFill="" secondFill="" secondFillLocation="BottomRight" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw">Forest|Leaf litter|Bunyip|(Key to closet)</objects>
+		</room>
+		<room id="44" name="Inside Ollie's House" subtitle="" x="80" y="-160" w="80" h="40" region="Normal" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="1" cornerTopRight="1" cornerBottomLeft="1" cornerBottomRight="1" borderstyle="Solid" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw">Ollie Owl's house|Ollie Owl|Shelves|Books|Records|Closet|(Flashlight)|(Glasses)</objects>
+		</room>
+		<room id="61" name="In the Bush" subtitle="" x="-400" y="-80" w="80" h="40" region="Carrot" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="1" cornerTopRight="1" cornerBottomLeft="1" cornerBottomRight="1" borderstyle="Solid" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw">Bush|Wattle|(Murnong)|(Native yams)</objects>
+		</room>
+		<room id="62" name="In the Bush" subtitle="" x="-280" y="-80" w="80" h="40" region="Normal" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="1" cornerTopRight="1" cornerBottomLeft="1" cornerBottomRight="1" borderstyle="Solid" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw">Bush|Termite mound|(Remains of termite mound)|(Termites)</objects>
+		</room>
+		<room id="63" name="In the Bush" subtitle="" x="-400" y="0" w="80" h="40" region="Carrot" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="1" cornerTopRight="1" cornerBottomLeft="1" cornerBottomRight="1" borderstyle="Solid" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw">Bush|Waratah|(Murnong)|(Native yams)</objects>
+		</room>
+		<room id="64" name="In the Bush" subtitle="" x="-280" y="0" w="80" h="40" region="Normal" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="1" cornerTopRight="1" cornerBottomLeft="1" cornerBottomRight="1" borderstyle="Solid" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw">Bush|Dead tree|Kylie Kookaburra|(Dead snake)</objects>
+		</room>
+		<room id="65" name="In the Bush" subtitle="" x="-160" y="0" w="80" h="40" region="Carrot" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="1" cornerTopRight="1" cornerBottomLeft="1" cornerBottomRight="1" borderstyle="Solid" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw">Bush|Paper bark tree|(Murnong)|(Native yams)</objects>
+		</room>
+		<room id="67" name="Western Trail" subtitle="" x="-280" y="80" w="80" h="40" region="Normal" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="1" cornerTopRight="1" cornerBottomLeft="1" cornerBottomRight="1" borderstyle="Solid" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw">Western trail|(Joey the joey)</objects>
+		</room>
+		<room id="68" name="Western Trail" subtitle="" x="-160" y="80" w="80" h="40" region="Normal" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="1" cornerTopRight="1" cornerBottomLeft="1" cornerBottomRight="1" borderstyle="Solid" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw">Western trail|Eddie Echidna</objects>
+		</room>
+		<room id="69" name="Outside House" subtitle="" x="-40" y="80" w="80" h="40" region="Normal" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="1" cornerTopRight="1" cornerBottomLeft="1" cornerBottomRight="1" borderstyle="Solid" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw">Your house|Gum tree|Trails|Sign</objects>
+		</room>
+		<room id="71" name="Wally's Burrow" subtitle="" x="-280" y="160" w="80" h="40" region="Normal" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="1" cornerTopRight="1" cornerBottomLeft="1" cornerBottomRight="1" borderstyle="Solid" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw">Wally Wombat's burrow|Wally Wombat|Clay jar</objects>
+		</room>
+		<room id="73" name="Kenny's House" subtitle="" x="-40" y="160" w="80" h="40" region="Normal" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="1" cornerTopRight="1" cornerBottomLeft="1" cornerBottomRight="1" borderstyle="Solid" isDark="yes" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw">Your house|Front door|Cupboard</objects>
+		</room>
+		<line id="107">
+			<dock index="0" id="61" port="e" />
+			<dock index="1" id="62" port="w" />
+		</line>
+		<line id="108">
+			<dock index="0" id="62" port="e" />
+			<dock index="1" id="6" port="w" />
+		</line>
+		<line id="112">
+			<dock index="0" id="63" port="e" />
+			<dock index="1" id="64" port="w" />
+		</line>
+		<line id="113">
+			<dock index="0" id="64" port="e" />
+			<dock index="1" id="65" port="w" />
+		</line>
+		<line id="118">
+			<dock index="0" id="67" port="e" />
+			<dock index="1" id="68" port="w" />
+		</line>
+		<line id="119">
+			<dock index="0" id="68" port="e" />
+			<dock index="1" id="69" port="w" />
+		</line>
+		<line id="120">
+			<dock index="0" id="69" port="e" />
+			<dock index="1" id="14" port="w" />
+		</line>
+		<line id="124">
+			<dock index="0" id="2" port="s" />
+			<dock index="1" id="61" port="n" />
+		</line>
+		<line id="125">
+			<dock index="0" id="61" port="s" />
+			<dock index="1" id="63" port="n" />
+		</line>
+		<line id="129">
+			<dock index="0" id="3" port="s" />
+			<dock index="1" id="62" port="n" />
+		</line>
+		<line id="130">
+			<dock index="0" id="62" port="s" />
+			<dock index="1" id="64" port="n" />
+		</line>
+		<line id="131">
+			<dock index="0" id="64" port="s" />
+			<dock index="1" id="67" port="n" />
+		</line>
+		<line id="132" style="dashed" startText="S,D" endText="N,U">
+			<dock index="0" id="67" port="s" />
+			<dock index="1" id="71" port="n" />
+		</line>
+		<line id="133">
+			<dock index="0" id="6" port="s" />
+			<dock index="1" id="65" port="n" />
+		</line>
+		<line id="136">
+			<dock index="0" id="39" port="s" />
+			<dock index="1" id="5" port="n" />
+		</line>
+		<line id="137">
+			<dock index="0" id="10" port="s" />
+			<dock index="1" id="69" port="n" />
+		</line>
+		<line id="138" style="dashed" startText="S,IN" endText="N,OUT">
+			<dock index="0" id="69" port="s" />
+			<dock index="1" id="73" port="n" />
+		</line>
+		<room id="231" name="Copyright © Garry Francis 2022" subtitle="" x="-520" y="160" w="180" h="40" region="NoRegion" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="1" cornerTopRight="1" cornerBottomLeft="1" cornerBottomRight="1" borderstyle="None" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw" />
+		</room>
+		<room id="232" name="Legend" subtitle="" x="-520" y="-240" w="80" h="40" region="NoRegion" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="0" cornerTopRight="0" cornerBottomLeft="0" cornerBottomRight="0" borderstyle="None" description="" roomFill="#FFFFFF" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw" />
+		</room>
+		<room id="240" name="Start Room" subtitle="" x="-520" y="-200" w="80" h="40" region="Normal" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="0" cornerTopRight="0" cornerBottomLeft="0" cornerBottomRight="0" borderstyle="Solid" isDark="yes" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw" />
+		</room>
+		<room id="241" name="Normal Room" subtitle="" x="-520" y="-140" w="80" h="40" region="Normal" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="0" cornerTopRight="0" cornerBottomLeft="0" cornerBottomRight="0" borderstyle="Solid" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw" />
+		</room>
+		<room id="286" name="Dark Room" subtitle="" x="-520" y="-80" w="80" h="40" region="Dark" handDrawn="no" allcornersequal="no" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="0" cornerTopRight="0" cornerBottomLeft="0" cornerBottomRight="0" borderstyle="Solid" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw" />
+		</room>
+		<line id="1" style="dashed" startText="D" endText="U">
+			<dock index="0" id="44" port="sw" />
+			<dock index="1" id="7" port="ne" />
+		</line>
+		<line id="8" style="dashed" startText="D" endText="U">
+			<dock index="0" id="11" port="sw" />
+			<dock index="1" id="69" port="ne" />
+		</line>
+		<room id="13" name="Murnong May Appear" subtitle="" x="-520" y="-20" w="80" h="40" region="Carrot" handDrawn="no" allcornersequal="yes" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="15" cornerTopRight="15" cornerBottomLeft="15" cornerBottomRight="15" borderstyle="Solid" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw" />
+		</room>
+		<room id="9" name="Bank of Creek" subtitle="" x="80" y="160" w="80" h="40" region="Normal" handDrawn="no" allcornersequal="yes" ellipse="no" roundedCorners="no" octagonal="no" cornerTopLeft="15" cornerTopRight="15" cornerBottomLeft="15" cornerBottomRight="15" borderstyle="Solid" description="" roomFill="" secondFill="" secondFillLocation="Bottom" roomBorder="" roomLargeText="" roomSmallText="">
+			<objects at="wsw">Creek|Muddy bank|Ferns|Pete Platypus|Pete's fur|Pete's bill|Pete's webbed feet|Pete's tail|Joke|(Heavy rock)</objects>
+		</room>
+		<line id="16" style="dashed" startText="S,D" endText="N,U">
+			<dock index="0" id="14" port="s" />
+			<dock index="1" id="9" port="n" />
+		</line>
+	</map>
+	<settings>
+		<colors>
+			<canvas>White</canvas>
+			<fill>#FFFF99</fill>
+			<border>Black</border>
+			<line>Black</line>
+			<selectedLine>Gold</selectedLine>
+			<hoverLine>DarkOrange</hoverLine>
+			<largeText>Black</largeText>
+			<smallText>Black</smallText>
+			<lineText>Black</lineText>
+			<grid>#F5F5F5</grid>
+		</colors>
+		<regions>
+			<Carrot Name="Carrot" TextColor="Black">#FF8000</Carrot>
+			<Dark Name="Dark" TextColor="Black">Silver</Dark>
+			<Dead Name="Dead" TextColor="White">Red</Dead>
+			<NoRegion Name="NoRegion" TextColor="Black">White</NoRegion>
+			<Normal Name="Normal" TextColor="Black">#FFFF80</Normal>
+			<Roo Name="Roo" TextColor="Black">#80FF80</Roo>
+		</regions>
+		<fonts>
+			<room size="12">Arial</room>
+			<object size="12">Arial Narrow</object>
+			<line size="12">Arial Narrow</line>
+		</fonts>
+		<grid>
+			<snapTo>yes</snapTo>
+			<visible>yes</visible>
+			<showOrigin>yes</showOrigin>
+			<size>20</size>
+		</grid>
+		<lines>
+			<width>1</width>
+			<handDrawn>no</handDrawn>
+			<arrowSize>8</arrowSize>
+			<textOffset>4</textOffset>
+		</lines>
+		<rooms>
+			<darknessStripeSize>10</darknessStripeSize>
+			<objectListOffset>4</objectListOffset>
+			<connectionStalkLength>20</connectionStalkLength>
+			<preferredDistanceBetweenRooms>40</preferredDistanceBetweenRooms>
+			<defaultRoomName>Cave</defaultRoomName>
+		</rooms>
+		<ui>
+			<handleSize>8</handleSize>
+			<snapToElementSize>8</snapToElementSize>
+		</ui>
+		<keypadNavigation>
+			<creationModifier>control</creationModifier>
+			<unexploredModifier>alt</unexploredModifier>
+		</keypadNavigation>
+	</settings>
+</trizbort>

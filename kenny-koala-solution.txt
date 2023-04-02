@@ -1,0 +1,112 @@
+Kenny Koala's Bushfire Survival Plan
+By Garry Francis
+For Z-code interpreters
+
+Solution by Garry Francis
+----------------------------------------
+This is a minimal solution. You'll need to EXAMINE lots of things for this solution to make sense. Scores are shown in parentheses as +A=B, where A is points earned and B is cumulative points earned. Optional (but significant) commands are shown in parentheses. You can omit these once you know what to do.
+
+TUTORIAL OFF
+(X ME) (you're Kenny Koala)
+(I) (you're carrying a note)
+(X NOTE) (it looks important)
+(READ IT) (it lists 5 tasks to do)
+DROP NOTE
+(X CUPBOARD) (it's closed)
+OPEN CUPBOARD (it's empty)
+(X DOOR) (it's closed)
+OPEN DOOR
+N
+U
+GET LEAVES
+D
+S
+PUT LEAVES IN CUPBOARD (+20=20)
+N
+E
+E
+N
+(X KELLY) (she looks worried)
+TALK TO KELLY (Joey has jumped off, can you bring him back?)
+(When Joey appears, GET JOEY, and take him back to Kelly, DROP JOEY (+20=40))
+S
+W
+D
+(X PETE) (ask him for a joke)
+ASK PETE FOR A JOKE
+G
+X CREEK (you find a rock)
+U
+W
+(N)
+(N) (you can't get past the snake)
+(S)
+W
+(X EDDIE) (you should talk to him)
+TALK TO EDDIE (he asks you for ants or termites)
+W
+D
+(X WALLY) (maybe you should talk to him)
+TALK TO WALLY (he asks for a tree root or tuber)
+GET JAR
+U
+E
+E
+U
+GET HONEY (you scoop it into the jar)
+D
+W
+W
+N
+(X KYLIE) (she looks sad)
+(TALK TO HER) (can you tell her a joke)
+TELL KYLIE A JOKE (she asks for another one)
+G (you've cheered her up, she says she owes you a favour)
+TELL KYLIE ABOUT SNAKE (she flies off, catches snake and drops it at your feet)
+(We now have to find the murnong, when you find it, GET MURNONG. GET YAMS)
+W
+N
+N
+E
+E
+S
+S
+W
+N
+BREAK MOUND WITH ROCK (termites run everywhere)
+DROP ROCK
+GET TERMITES (with jar of honey)
+S
+S
+D
+GIVE YAMS TO WALLY (+20=60)
+U
+E
+GIVE TERMITES TO EDDIE (+20=80)
+E
+N
+N
+U
+(x OLLIE) (he looks upset)
+TALK TO OLLIE (he gives you a flashlight & asks you to find his lost closet key)
+D
+N (it's dark)
+TURN ON FLASHLIGHT
+N (maybe you should go back to Ollie Owl)
+S
+S
+U
+TALK TO OLLIE (he give you his glasses)
+D
+N
+N
+WEAR GLASSES (you see something in the leaf litter)
+L (you find a key)
+GET KEY
+S
+S
+U
+(GIVE KEY TO OLLIE) (he asks you to unlock the cupboard, as he doesn't have any hands)
+UNLOCK CLOSET WITH KEY
+OPEN IT
+***THE END***
