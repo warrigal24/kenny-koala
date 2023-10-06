@@ -10,7 +10,7 @@ Every year, the animals appoint a bushfire warden. The bushfire warden has an im
 
 This year, it's Kenny Koala's turn to be the bushfire warden. He has a checklist of things to do. Can you help Kenny to complete all the things on his checklist?
 
-This is a traditional text adventure that was written for [Text Adventure Literacy Jam 2022](https://itch.io/jam/talp2022), 21 March to 2 May 2022. The game is hosted at [Kenny Koala's Bushfire Survival Plan](https://warrigal.itch.io/kenny-koala).
+This is a traditional text adventure that was written for [Text Adventure Literacy Jam 2022](https://itch.io/jam/talp2022), 21 March to 2 May 2022.
 
 ## Release notes
 
